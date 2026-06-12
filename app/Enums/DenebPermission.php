@@ -14,6 +14,16 @@ enum DenebPermission: string
     case ROLES_UPDATE = 'roles-update';
     case ROLES_DELETE = 'roles-delete';
 
+    case MATERIAL_CATEGORIES_CREATE = 'material-categories-create';
+    case MATERIAL_CATEGORIES_READ = 'material-categories-read';
+    case MATERIAL_CATEGORIES_UPDATE = 'material-categories-update';
+    case MATERIAL_CATEGORIES_DELETE = 'material-categories-delete';
+
+    case MATERIALS_CREATE = 'materials-create';
+    case MATERIALS_READ = 'materials-read';
+    case MATERIALS_UPDATE = 'materials-update';
+    case MATERIALS_DELETE = 'materials-delete';
+
     case MANAGE_API_KEYS_CREATE = 'manage-api-keys-create';
     case MANAGE_API_KEYS_READ = 'manage-api-keys-read';
     case MANAGE_API_KEYS_UPDATE = 'manage-api-keys-update';
