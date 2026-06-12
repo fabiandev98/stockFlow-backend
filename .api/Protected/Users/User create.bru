@@ -1,0 +1,28 @@
+meta {
+  name: User create
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{URL}}/users
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Accept-Language: es
+}
+
+body:multipart-form {
+  name: Test
+  email: contacto2@nuwebs.com.co
+  password: 12345678
+  password_confirmation: 12345678
+  role_id: 1
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

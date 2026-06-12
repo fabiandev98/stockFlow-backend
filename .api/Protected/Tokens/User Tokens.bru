@@ -1,0 +1,126 @@
+meta {
+  name: User Tokens
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{URL}}/auth/tokens
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+example {
+  name: 200
+  
+  request: {
+    url: {{URL}}/auth/tokens
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    headers: {
+      host: localhost:8000
+      connection: close
+      x-powered-by: PHP/8.2.21
+      cache-control: no-cache, private
+      date: Sat, 13 Dec 2025 16:37:36 GMT
+      content-type: application/json
+      vary: Origin
+      x-clockwork-id: 1765643856-4296-883100117
+      x-clockwork-version: 5.3.4
+      server-timing: app; dur=25.321006774902; desc="Application", db; dur=5.69; desc="Database", timeline-event-0; dur=11.063814163208; desc="Controller"
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "tokens": [
+            {
+              "id": 1,
+              "name": "default-device",
+              "abilities": [
+                "*"
+              ],
+              "last_used_at": null,
+              "expires_at": null,
+              "created_at": "2025-12-13T16:20:00+00:00"
+            },
+            {
+              "id": 2,
+              "name": "default-device",
+              "abilities": [
+                "*"
+              ],
+              "last_used_at": null,
+              "expires_at": "2025-12-14T16:25:05+00:00",
+              "created_at": "2025-12-13T16:25:05+00:00"
+            },
+            {
+              "id": 3,
+              "name": "default-device",
+              "abilities": [
+                "*"
+              ],
+              "last_used_at": null,
+              "expires_at": "2025-12-14T16:26:02+00:00",
+              "created_at": "2025-12-13T16:26:02+00:00"
+            },
+            {
+              "id": 4,
+              "name": "default-device",
+              "abilities": [
+                "*"
+              ],
+              "last_used_at": null,
+              "expires_at": "2025-12-14T16:27:09+00:00",
+              "created_at": "2025-12-13T16:27:09+00:00"
+            },
+            {
+              "id": 5,
+              "name": "default-device",
+              "abilities": [
+                "*"
+              ],
+              "last_used_at": null,
+              "expires_at": "2025-12-14T16:27:38+00:00",
+              "created_at": "2025-12-13T16:27:38+00:00"
+            },
+            {
+              "id": 6,
+              "name": "default-device",
+              "abilities": [
+                "*"
+              ],
+              "last_used_at": "2025-12-13T16:37:36+00:00",
+              "expires_at": "2025-12-14T16:27:51+00:00",
+              "created_at": "2025-12-13T16:27:51+00:00"
+            },
+            {
+              "id": 7,
+              "name": "Walia integration",
+              "abilities": [
+                "*"
+              ],
+              "last_used_at": null,
+              "expires_at": null,
+              "created_at": "2025-12-13T16:35:03+00:00"
+            }
+          ]
+        }
+      '''
+    }
+  }
+}

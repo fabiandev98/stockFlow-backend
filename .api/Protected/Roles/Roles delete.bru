@@ -1,0 +1,15 @@
+meta {
+  name: Roles delete
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{URL}}/roles/4
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

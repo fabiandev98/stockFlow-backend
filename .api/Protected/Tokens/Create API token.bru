@@ -1,0 +1,22 @@
+meta {
+  name: Create API token
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{URL}}/auth/tokens/api
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "key_name": "Walia integration"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

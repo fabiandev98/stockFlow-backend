@@ -1,0 +1,374 @@
+meta {
+  name: Roles index
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{URL}}/roles
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+
+example {
+  name: Roles index general
+  
+  request: {
+    url: {{URL}}/roles
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    headers: {
+      Host: localhost:8000
+      Date: Wed, 13 Dec 2023 06:55:06 GMT
+      Date: Wed, 13 Dec 2023 06:55:06 GMT
+      Connection: close
+      X-Powered-By: PHP/8.2.6
+      Cache-Control: no-cache, private
+      Content-Type: application/json
+      X-RateLimit-Limit: 60
+      X-RateLimit-Remaining: 59
+      Vary: Origin
+    }
+  
+    status: {
+      code: OK
+      text: 200
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+            "data": [
+                {
+                    "id": 1,
+                    "hierarchy": 0,
+                    "name": "Superadmin",
+                    "description": "Superadmin",
+                    "permissions": [
+                        "users-create",
+                        "users-read",
+                        "users-update",
+                        "users-delete",
+                        "posts-create",
+                        "posts-read",
+                        "posts-update",
+                        "posts-delete",
+                        "roles-create",
+                        "roles-read",
+                        "roles-update",
+                        "roles-delete",
+                        "quotations-read",
+                        "quotations-delete",
+                        "profile-read",
+                        "profile-update"
+                    ],
+                    "created": "2023-11-03T20:27:47.000000Z",
+                    "modified": "2023-11-03T20:27:47.000000Z"
+                },
+                {
+                    "id": 2,
+                    "hierarchy": 1,
+                    "name": "Admin",
+                    "description": "Admin",
+                    "permissions": [
+                        "users-create",
+                        "users-read",
+                        "users-update",
+                        "users-delete",
+                        "posts-create",
+                        "posts-read",
+                        "posts-update",
+                        "posts-delete",
+                        "roles-read",
+                        "quotations-read",
+                        "quotations-delete",
+                        "profile-read",
+                        "profile-update"
+                    ],
+                    "created": "2023-11-03T20:27:47.000000Z",
+                    "modified": "2023-11-03T20:27:47.000000Z"
+                },
+                {
+                    "id": 3,
+                    "hierarchy": 2,
+                    "name": "Editor",
+                    "description": "Editor",
+                    "permissions": [
+                        "posts-create",
+                        "posts-read",
+                        "posts-update",
+                        "posts-delete",
+                        "profile-read",
+                        "profile-update"
+                    ],
+                    "created": "2023-11-03T20:27:47.000000Z",
+                    "modified": "2023-11-03T20:27:47.000000Z"
+                },
+                {
+                    "id": 5,
+                    "hierarchy": 3,
+                    "name": "Rol De Prueba",
+                    "description": "asdasd",
+                    "permissions": [
+                        "quotations-read",
+                        "quotations-delete"
+                    ],
+                    "created": "2023-11-03T20:43:54.000000Z",
+                    "modified": "2023-11-03T20:45:10.000000Z"
+                },
+                {
+                    "id": 4,
+                    "hierarchy": 4,
+                    "name": "Standard",
+                    "description": "Standard",
+                    "permissions": [
+                        "profile-read",
+                        "profile-update"
+                    ],
+                    "created": "2023-11-03T20:27:47.000000Z",
+                    "modified": "2023-11-03T20:43:54.000000Z"
+                }
+            ],
+            "links": {
+                "first": "http://localhost:8000/roles?page=1",
+                "last": "http://localhost:8000/roles?page=1",
+                "prev": null,
+                "next": null
+            },
+            "meta": {
+                "current_page": 1,
+                "from": 1,
+                "last_page": 1,
+                "links": [
+                    {
+                        "url": null,
+                        "label": "&laquo; Previous",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/roles?page=1",
+                        "label": "1",
+                        "active": true
+                    },
+                    {
+                        "url": null,
+                        "label": "Next &raquo;",
+                        "active": false
+                    }
+                ],
+                "path": "http://localhost:8000/roles",
+                "per_page": 25,
+                "to": 5,
+                "total": 5
+            }
+        }
+      '''
+    }
+  }
+}
+
+example {
+  name: Roles index paging
+  
+  request: {
+    url: {{URL}}/roles?page=2
+    method: GET
+    mode: none
+    params:query: {
+      page: 2
+    }
+  }
+  
+  response: {
+    headers: {
+      Host: localhost:8000
+      Date: Wed, 13 Dec 2023 06:55:22 GMT
+      Date: Wed, 13 Dec 2023 06:55:22 GMT
+      Connection: close
+      X-Powered-By: PHP/8.2.6
+      Cache-Control: no-cache, private
+      Content-Type: application/json
+      X-RateLimit-Limit: 60
+      X-RateLimit-Remaining: 58
+      Vary: Origin
+    }
+  
+    status: {
+      code: OK
+      text: 200
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+            "data": [],
+            "links": {
+                "first": "http://localhost:8000/roles?page=1",
+                "last": "http://localhost:8000/roles?page=1",
+                "prev": "http://localhost:8000/roles?page=1",
+                "next": null
+            },
+            "meta": {
+                "current_page": 2,
+                "from": null,
+                "last_page": 1,
+                "links": [
+                    {
+                        "url": "http://localhost:8000/roles?page=1",
+                        "label": "&laquo; Previous",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/roles?page=1",
+                        "label": "1",
+                        "active": false
+                    },
+                    {
+                        "url": null,
+                        "label": "Next &raquo;",
+                        "active": false
+                    }
+                ],
+                "path": "http://localhost:8000/roles",
+                "per_page": 25,
+                "to": null,
+                "total": 5
+            }
+        }
+      '''
+    }
+  }
+}
+
+example {
+  name: Roles index global filter
+  
+  request: {
+    url: {{URL}}/roles?filter[global]=USERS
+    method: GET
+    mode: none
+    params:query: {
+      filter[global]: USERS
+    }
+  }
+  
+  response: {
+    headers: {
+      Host: localhost:8000
+      Date: Wed, 13 Dec 2023 07:01:45 GMT
+      Date: Wed, 13 Dec 2023 07:01:45 GMT
+      Connection: close
+      X-Powered-By: PHP/8.2.6
+      Cache-Control: no-cache, private
+      Content-Type: application/json
+      X-RateLimit-Limit: 60
+      X-RateLimit-Remaining: 58
+      Vary: Origin
+    }
+  
+    status: {
+      code: OK
+      text: 200
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+            "data": [
+                {
+                    "id": 1,
+                    "hierarchy": 0,
+                    "name": "Superadmin",
+                    "description": "Superadmin",
+                    "permissions": [
+                        "users-create",
+                        "users-read",
+                        "users-update",
+                        "users-delete",
+                        "posts-create",
+                        "posts-read",
+                        "posts-update",
+                        "posts-delete",
+                        "roles-create",
+                        "roles-read",
+                        "roles-update",
+                        "roles-delete",
+                        "quotations-read",
+                        "quotations-delete",
+                        "profile-read",
+                        "profile-update"
+                    ],
+                    "created": "2023-11-03T20:27:47.000000Z",
+                    "modified": "2023-11-03T20:27:47.000000Z"
+                },
+                {
+                    "id": 2,
+                    "hierarchy": 1,
+                    "name": "Admin",
+                    "description": "Admin",
+                    "permissions": [
+                        "users-create",
+                        "users-read",
+                        "users-update",
+                        "users-delete",
+                        "posts-create",
+                        "posts-read",
+                        "posts-update",
+                        "posts-delete",
+                        "roles-read",
+                        "quotations-read",
+                        "quotations-delete",
+                        "profile-read",
+                        "profile-update"
+                    ],
+                    "created": "2023-11-03T20:27:47.000000Z",
+                    "modified": "2023-11-03T20:27:47.000000Z"
+                }
+            ],
+            "links": {
+                "first": "http://localhost:8000/roles?page=1",
+                "last": "http://localhost:8000/roles?page=1",
+                "prev": null,
+                "next": null
+            },
+            "meta": {
+                "current_page": 1,
+                "from": 1,
+                "last_page": 1,
+                "links": [
+                    {
+                        "url": null,
+                        "label": "&laquo; Previous",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/roles?page=1",
+                        "label": "1",
+                        "active": true
+                    },
+                    {
+                        "url": null,
+                        "label": "Next &raquo;",
+                        "active": false
+                    }
+                ],
+                "path": "http://localhost:8000/roles",
+                "per_page": 25,
+                "to": 2,
+                "total": 2
+            }
+        }
+      '''
+    }
+  }
+}

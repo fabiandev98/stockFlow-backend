@@ -1,0 +1,21 @@
+meta {
+  name: Verify email
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{URL}}/auth/verify-email/1/dd25ef8d21f39c13783c58460b11c9b619f88046?expires=1765648610&signature=04d548d80e381c1e8785a825964524af0237cac2466e88208122b6e0bf72b6a0
+  body: none
+  auth: inherit
+}
+
+params:query {
+  expires: 1765648610
+  signature: 04d548d80e381c1e8785a825964524af0237cac2466e88208122b6e0bf72b6a0
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

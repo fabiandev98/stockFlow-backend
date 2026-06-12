@@ -1,0 +1,143 @@
+meta {
+  name: User roles below
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{URL}}/users/roles-below
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+example {
+  name: User roles below
+  
+  request: {
+    url: {{URL}}/users/rolesbelow
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    headers: {
+      Host: localhost:8000
+      Date: Wed, 13 Dec 2023 06:51:17 GMT
+      Date: Wed, 13 Dec 2023 06:51:17 GMT
+      Connection: close
+      X-Powered-By: PHP/8.2.6
+      Cache-Control: no-cache, private
+      Content-Type: application/json
+      X-RateLimit-Limit: 60
+      X-RateLimit-Remaining: 57
+      Vary: Origin
+    }
+  
+    status: {
+      code: OK
+      text: 200
+    }
+  
+    body: {
+      type: json
+      content: '''
+        [
+            {
+                "id": 1,
+                "hierarchy": 0,
+                "name": "Superadmin",
+                "description": "Superadmin",
+                "permissions": [
+                    "users-create",
+                    "users-read",
+                    "users-update",
+                    "users-delete",
+                    "posts-create",
+                    "posts-read",
+                    "posts-update",
+                    "posts-delete",
+                    "roles-create",
+                    "roles-read",
+                    "roles-update",
+                    "roles-delete",
+                    "quotations-read",
+                    "quotations-delete",
+                    "profile-read",
+                    "profile-update"
+                ],
+                "created": "2023-11-03T20:27:47.000000Z",
+                "modified": "2023-11-03T20:27:47.000000Z"
+            },
+            {
+                "id": 2,
+                "hierarchy": 1,
+                "name": "Admin",
+                "description": "Admin",
+                "permissions": [
+                    "users-create",
+                    "users-read",
+                    "users-update",
+                    "users-delete",
+                    "posts-create",
+                    "posts-read",
+                    "posts-update",
+                    "posts-delete",
+                    "roles-read",
+                    "quotations-read",
+                    "quotations-delete",
+                    "profile-read",
+                    "profile-update"
+                ],
+                "created": "2023-11-03T20:27:47.000000Z",
+                "modified": "2023-11-03T20:27:47.000000Z"
+            },
+            {
+                "id": 3,
+                "hierarchy": 2,
+                "name": "Editor",
+                "description": "Editor",
+                "permissions": [
+                    "posts-create",
+                    "posts-read",
+                    "posts-update",
+                    "posts-delete",
+                    "profile-read",
+                    "profile-update"
+                ],
+                "created": "2023-11-03T20:27:47.000000Z",
+                "modified": "2023-11-03T20:27:47.000000Z"
+            },
+            {
+                "id": 5,
+                "hierarchy": 3,
+                "name": "Rol De Prueba",
+                "description": "asdasd",
+                "permissions": [
+                    "quotations-read",
+                    "quotations-delete"
+                ],
+                "created": "2023-11-03T20:43:54.000000Z",
+                "modified": "2023-11-03T20:45:10.000000Z"
+            },
+            {
+                "id": 4,
+                "hierarchy": 4,
+                "name": "Standard",
+                "description": "Standard",
+                "permissions": [
+                    "profile-read",
+                    "profile-update"
+                ],
+                "created": "2023-11-03T20:27:47.000000Z",
+                "modified": "2023-11-03T20:43:54.000000Z"
+            }
+        ]
+      '''
+    }
+  }
+}

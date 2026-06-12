@@ -1,0 +1,27 @@
+meta {
+  name: Roles create
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{URL}}/roles
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "TEST",
+      "hierarchy": 2,
+      "description":null,
+      "permissions": [
+          "users-create",
+          "roles-read"
+      ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

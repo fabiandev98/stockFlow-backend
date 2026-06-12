@@ -1,0 +1,30 @@
+meta {
+  name: Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{URL}}/auth/login
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Accept-Encoding: application/json
+}
+
+body:multipart-form {
+  email: {{TestUser}}
+  password: {{TestUserPassword}}
+}
+
+script:post-response {
+  var data = res.getBody();
+  bru.setEnvVar("Token", data.token.token);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

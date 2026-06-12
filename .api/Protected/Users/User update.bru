@@ -1,0 +1,24 @@
+meta {
+  name: User update
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{URL}}/users/1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name":"Douglas Ramírez tested",
+      "email":"contacto@nuwebs.com.co",
+      "role_id":1
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Roles update
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{URL}}/roles/4
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "TESTED",
+      "hierarchy": 9,
+      "description":null,
+      "permissions": [
+          "users-read"
+      ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}
