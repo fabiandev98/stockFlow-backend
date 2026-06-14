@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
+    /**
+     * @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory>
+     */
     use HasFactory;
 
     protected $fillable = [
@@ -23,7 +26,7 @@ class Product extends Model
     ];
 
     /**
-     * @return HasMany<ProductComposition>
+     * @return HasMany<ProductComposition, $this>
      */
     public function compositions(): HasMany
     {
@@ -31,7 +34,7 @@ class Product extends Model
     }
 
     /**
-     * @return HasMany<SaleItem>
+     * @return HasMany<SaleItem, $this>
      */
     public function saleItems(): HasMany
     {

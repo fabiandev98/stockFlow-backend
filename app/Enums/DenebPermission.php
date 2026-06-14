@@ -24,6 +24,20 @@ enum DenebPermission: string
     case MATERIALS_UPDATE = 'materials-update';
     case MATERIALS_DELETE = 'materials-delete';
 
+    case SUPPLIERS_CREATE = 'suppliers-create';
+    case SUPPLIERS_READ = 'suppliers-read';
+    case SUPPLIERS_UPDATE = 'suppliers-update';
+    case SUPPLIERS_DELETE = 'suppliers-delete';
+
+    case PURCHASES_CREATE = 'purchases-create';
+    case PURCHASES_READ = 'purchases-read';
+    case PURCHASES_UPDATE = 'purchases-update';
+    case PURCHASES_DELETE = 'purchases-delete';
+
+    case STOCK_BATCHES_READ = 'stock-batches-read';
+
+    case INVENTORY_READ = 'inventory-read';
+
     case MANAGE_API_KEYS_CREATE = 'manage-api-keys-create';
     case MANAGE_API_KEYS_READ = 'manage-api-keys-read';
     case MANAGE_API_KEYS_UPDATE = 'manage-api-keys-update';

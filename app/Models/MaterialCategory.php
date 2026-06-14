@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MaterialCategory extends Model
 {
+    /**
+     * @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory>
+     */
     use HasFactory;
 
     protected $fillable = [
@@ -15,7 +18,7 @@ class MaterialCategory extends Model
     ];
 
     /**
-     * @return HasMany<Material>
+     * @return HasMany<Material, $this>
      */
     public function materials(): HasMany
     {

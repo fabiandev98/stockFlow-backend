@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MaterialCategoryController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\StockBatchController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,4 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/roles', RoleController::class);
     Route::apiResource('/material-categories', MaterialCategoryController::class);
     Route::apiResource('/materials', MaterialController::class);
+    Route::apiResource('/suppliers', SupplierController::class);
+    Route::apiResource('/purchases', PurchaseController::class);
+    Route::apiResource('/stock-batches', StockBatchController::class)->only(['index', 'show']);
+    Route::get('/inventory/materials', [InventoryController::class, 'materials'])->name('inventory.materials');
 });

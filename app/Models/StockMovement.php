@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockMovement extends Model
 {
+    /**
+     * @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory>
+     */
     use HasFactory;
 
     protected $fillable = [
@@ -27,7 +30,7 @@ class StockMovement extends Model
     ];
 
     /**
-     * @return BelongsTo<Material, StockMovement>
+     * @return BelongsTo<Material, $this>
      */
     public function material(): BelongsTo
     {
@@ -35,7 +38,7 @@ class StockMovement extends Model
     }
 
     /**
-     * @return BelongsTo<StockBatch, StockMovement>
+     * @return BelongsTo<StockBatch, $this>
      */
     public function stockBatch(): BelongsTo
     {
@@ -43,7 +46,7 @@ class StockMovement extends Model
     }
 
     /**
-     * @return BelongsTo<SaleItem, StockMovement>
+     * @return BelongsTo<SaleItem, $this>
      */
     public function saleItem(): BelongsTo
     {
@@ -51,7 +54,7 @@ class StockMovement extends Model
     }
 
     /**
-     * @return BelongsTo<User, StockMovement>
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {

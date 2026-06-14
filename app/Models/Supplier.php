@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Supplier extends Model
 {
+    /**
+     * @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory>
+     */
     use HasFactory;
 
     protected $fillable = [
@@ -18,7 +21,7 @@ class Supplier extends Model
     ];
 
     /**
-     * @return HasMany<Purchase>
+     * @return HasMany<Purchase, $this>
      */
     public function purchases(): HasMany
     {

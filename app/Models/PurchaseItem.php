@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseItem extends Model
 {
+    /**
+     * @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory>
+     */
     use HasFactory;
 
     protected $fillable = [
@@ -28,7 +31,7 @@ class PurchaseItem extends Model
     ];
 
     /**
-     * @return BelongsTo<Purchase, PurchaseItem>
+     * @return BelongsTo<Purchase, $this>
      */
     public function purchase(): BelongsTo
     {
@@ -36,7 +39,7 @@ class PurchaseItem extends Model
     }
 
     /**
-     * @return BelongsTo<Material, PurchaseItem>
+     * @return BelongsTo<Material, $this>
      */
     public function material(): BelongsTo
     {
@@ -44,7 +47,7 @@ class PurchaseItem extends Model
     }
 
     /**
-     * @return HasMany<StockBatch>
+     * @return HasMany<StockBatch, $this>
      */
     public function stockBatches(): HasMany
     {

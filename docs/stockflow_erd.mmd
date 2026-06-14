@@ -1,0 +1,160 @@
+erDiagram
+    USERS ||--o{ PURCHASES : records
+    USERS ||--o{ SALES : records
+    USERS ||--o{ STOCK_MOVEMENTS : records
+
+    MATERIAL_CATEGORIES ||--o{ MATERIALS : groups
+    MATERIALS ||--o{ PURCHASE_ITEMS : purchased_as
+    MATERIALS ||--o{ STOCK_BATCHES : stocked_in
+    MATERIALS ||--o{ PRODUCT_COMPOSITIONS : used_by
+    MATERIALS ||--o{ STOCK_MOVEMENTS : moved_as
+
+    SUPPLIERS ||--o{ PURCHASES : supplies
+    PURCHASES ||--o{ PURCHASE_ITEMS : contains
+    PURCHASE_ITEMS ||--o| STOCK_BATCHES : creates
+
+    PRODUCT_CATEGORIES ||--o{ PRODUCTS : groups
+    PRODUCTS ||--o{ PRODUCT_COMPOSITIONS : composed_of
+    PRODUCTS ||--o{ SALE_ITEMS : sold_as
+
+    SALES ||--o{ SALE_ITEMS : contains
+    SALE_ITEMS ||--o{ STOCK_MOVEMENTS : consumes
+    STOCK_BATCHES ||--o{ STOCK_MOVEMENTS : affected_by
+
+    USERS {
+        bigint id PK
+        string name
+        string email
+        timestamp email_verified_at
+        string password
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MATERIAL_CATEGORIES {
+        bigint id PK
+        string name
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MATERIALS {
+        bigint id PK
+        bigint material_category_id FK
+        string name
+        string unit
+        decimal minimum_stock
+        boolean is_perishable
+        int default_expiration_days
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SUPPLIERS {
+        bigint id PK
+        string name
+        string contact_name
+        string phone
+        string email
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PURCHASES {
+        bigint id PK
+        bigint supplier_id FK
+        bigint user_id FK
+        date purchase_date
+        decimal total_cost
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PURCHASE_ITEMS {
+        bigint id PK
+        bigint purchase_id FK
+        bigint material_id FK
+        decimal quantity
+        decimal unit_cost
+        decimal total_cost
+        date expiration_date
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    STOCK_BATCHES {
+        bigint id PK
+        bigint material_id FK
+        bigint purchase_item_id FK
+        decimal initial_quantity
+        decimal available_quantity
+        decimal unit_cost
+        date received_date
+        date expiration_date
+        string status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PRODUCT_CATEGORIES {
+        bigint id PK
+        string name
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PRODUCTS {
+        bigint id PK
+        bigint product_category_id FK
+        string name
+        decimal sale_price
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PRODUCT_COMPOSITIONS {
+        bigint id PK
+        bigint product_id FK
+        bigint material_id FK
+        decimal quantity_required
+        string unit
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SALES {
+        bigint id PK
+        bigint user_id FK
+        date sale_date
+        decimal total_amount
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SALE_ITEMS {
+        bigint id PK
+        bigint sale_id FK
+        bigint product_id FK
+        int quantity
+        decimal unit_price
+        decimal total_price
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    STOCK_MOVEMENTS {
+        bigint id PK
+        bigint material_id FK
+        bigint stock_batch_id FK
+        bigint sale_item_id FK
+        bigint user_id FK
+        string type
+        decimal quantity
+        text reason
+        timestamp movement_date
+        timestamp created_at
+        timestamp updated_at
+    }
