@@ -93,7 +93,7 @@ class PurchaseService
         $totalCost = 0;
 
         foreach ($data->items as $item) {
-            $material = Material::findOrFail($item['material_id']);
+            $material = $this->findMaterial((int) $item['material_id']);
             $quantity = (float) $item['quantity'];
             $unitCost = (float) $item['unit_cost'];
             $itemTotal = round($quantity * $unitCost, 2);
@@ -124,17 +124,22 @@ class PurchaseService
         $purchase->update(['total_cost' => round($totalCost, 2)]);
     }
 
+    private function findMaterial(int $materialId): Material
+    {
+        return Material::query()->findOrFail($materialId);
+    }
+
     /**
      * @param  array<string, mixed>  $item
      */
     private function resolveExpirationDate(Material $material, string $purchaseDate, array $item): ?string
     {
         if (! $material->is_perishable) {
-            return $item['expiration_date'] ?? null;
+            return $this->nullableString($item['expiration_date'] ?? null);
         }
 
         if (! empty($item['expiration_date'])) {
-            return $item['expiration_date'];
+            return $this->nullableString($item['expiration_date']);
         }
 
         if ($material->default_expiration_days) {
@@ -147,6 +152,11 @@ class PurchaseService
             Response::HTTP_UNPROCESSABLE_ENTITY,
             "Expiration date is required for perishable material '{$material->name}'"
         );
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     private function ensurePurchaseCanBeRebuilt(Purchase $purchase): void

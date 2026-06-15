@@ -16,8 +16,9 @@ class InventoryMaterialResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $availableStock = (float) ($this->available_stock ?? 0);
+        $availableStock = (float) ($this->getAttribute('available_stock') ?? 0);
         $minimumStock = (float) $this->minimum_stock;
+        $nextExpirationDate = $this->getAttribute('next_expiration_date');
 
         return [
             'id' => $this->id,
@@ -29,7 +30,7 @@ class InventoryMaterialResource extends JsonResource
             'available_stock' => number_format($availableStock, 2, '.', ''),
             'is_low_stock' => $availableStock <= $minimumStock,
             'is_perishable' => $this->is_perishable,
-            'next_expiration_date' => $this->next_expiration_date,
+            'next_expiration_date' => $nextExpirationDate,
         ];
     }
 }

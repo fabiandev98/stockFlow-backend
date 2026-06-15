@@ -11,9 +11,9 @@ class UpdateMaterialCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $materialCategory = $this->route('material_category');
+        $materialCategory = $this->materialCategoryFromRoute();
 
-        return $materialCategory instanceof MaterialCategory
+        return $materialCategory !== null
             && ($this->user()?->can('update', $materialCategory) ?? false);
     }
 
@@ -22,7 +22,7 @@ class UpdateMaterialCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        $materialCategory = $this->route('material_category');
+        $materialCategoryId = $this->materialCategoryFromRoute()?->getKey();
 
         return [
             'name' => [
@@ -30,7 +30,7 @@ class UpdateMaterialCategoryRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:120',
-                Rule::unique('material_categories', 'name')->ignore($materialCategory?->id),
+                Rule::unique('material_categories', 'name')->ignore($materialCategoryId),
             ],
         ];
     }
@@ -38,5 +38,12 @@ class UpdateMaterialCategoryRequest extends FormRequest
     public function toDto(): MaterialCategoryData
     {
         return MaterialCategoryData::from($this->validated());
+    }
+
+    private function materialCategoryFromRoute(): ?MaterialCategory
+    {
+        $materialCategory = $this->route('material_category');
+
+        return $materialCategory instanceof MaterialCategory ? $materialCategory : null;
     }
 }

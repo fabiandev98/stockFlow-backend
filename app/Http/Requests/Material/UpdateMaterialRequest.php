@@ -11,9 +11,9 @@ class UpdateMaterialRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $material = $this->route('material');
+        $material = $this->materialFromRoute();
 
-        return $material instanceof Material
+        return $material !== null
             && ($this->user()?->can('update', $material) ?? false);
     }
 
@@ -22,7 +22,7 @@ class UpdateMaterialRequest extends FormRequest
      */
     public function rules(): array
     {
-        $material = $this->route('material');
+        $materialId = $this->materialFromRoute()?->getKey();
 
         return [
             'material_category_id' => 'nullable|exists:material_categories,id',
@@ -31,7 +31,7 @@ class UpdateMaterialRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:120',
-                Rule::unique('materials', 'name')->ignore($material?->id),
+                Rule::unique('materials', 'name')->ignore($materialId),
             ],
             'unit' => 'required|string|max:50',
             'minimum_stock' => 'required|numeric|min:0',
@@ -46,5 +46,12 @@ class UpdateMaterialRequest extends FormRequest
             ...$this->validated(),
             'is_perishable' => $this->boolean('is_perishable', false),
         ]);
+    }
+
+    private function materialFromRoute(): ?Material
+    {
+        $material = $this->route('material');
+
+        return $material instanceof Material ? $material : null;
     }
 }

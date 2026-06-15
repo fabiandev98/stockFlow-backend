@@ -11,9 +11,9 @@ class UpdateSupplierRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $supplier = $this->route('supplier');
+        $supplier = $this->supplierFromRoute();
 
-        return $supplier instanceof Supplier
+        return $supplier !== null
             && ($this->user()?->can('update', $supplier) ?? false);
     }
 
@@ -22,7 +22,7 @@ class UpdateSupplierRequest extends FormRequest
      */
     public function rules(): array
     {
-        $supplier = $this->route('supplier');
+        $supplierId = $this->supplierFromRoute()?->getKey();
 
         return [
             'name' => [
@@ -30,7 +30,7 @@ class UpdateSupplierRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:120',
-                Rule::unique('suppliers', 'name')->ignore($supplier?->id),
+                Rule::unique('suppliers', 'name')->ignore($supplierId),
             ],
             'contact_name' => 'nullable|string|max:120',
             'phone' => 'nullable|string|max:50',
@@ -41,5 +41,12 @@ class UpdateSupplierRequest extends FormRequest
     public function toDto(): SupplierData
     {
         return SupplierData::from($this->validated());
+    }
+
+    private function supplierFromRoute(): ?Supplier
+    {
+        $supplier = $this->route('supplier');
+
+        return $supplier instanceof Supplier ? $supplier : null;
     }
 }

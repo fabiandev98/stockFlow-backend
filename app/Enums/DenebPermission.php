@@ -24,6 +24,16 @@ enum DenebPermission: string
     case MATERIALS_UPDATE = 'materials-update';
     case MATERIALS_DELETE = 'materials-delete';
 
+    case PRODUCT_CATEGORIES_CREATE = 'product-categories-create';
+    case PRODUCT_CATEGORIES_READ = 'product-categories-read';
+    case PRODUCT_CATEGORIES_UPDATE = 'product-categories-update';
+    case PRODUCT_CATEGORIES_DELETE = 'product-categories-delete';
+
+    case PRODUCTS_CREATE = 'products-create';
+    case PRODUCTS_READ = 'products-read';
+    case PRODUCTS_UPDATE = 'products-update';
+    case PRODUCTS_DELETE = 'products-delete';
+
     case SUPPLIERS_CREATE = 'suppliers-create';
     case SUPPLIERS_READ = 'suppliers-read';
     case SUPPLIERS_UPDATE = 'suppliers-update';
@@ -34,7 +44,13 @@ enum DenebPermission: string
     case PURCHASES_UPDATE = 'purchases-update';
     case PURCHASES_DELETE = 'purchases-delete';
 
+    case SALES_CREATE = 'sales-create';
+    case SALES_READ = 'sales-read';
+
     case STOCK_BATCHES_READ = 'stock-batches-read';
+
+    case STOCK_MOVEMENTS_CREATE = 'stock-movements-create';
+    case STOCK_MOVEMENTS_READ = 'stock-movements-read';
 
     case INVENTORY_READ = 'inventory-read';
 

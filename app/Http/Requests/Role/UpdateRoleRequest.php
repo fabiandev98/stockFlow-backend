@@ -25,6 +25,7 @@ class UpdateRoleRequest extends FormRequest
     public function rules(): array
     {
         $role = $this->getRoleFromRoute();
+        $roleId = $role?->getKey();
 
         $user = $this->user();
         if (! $user) {
@@ -39,7 +40,7 @@ class UpdateRoleRequest extends FormRequest
         return [
             'name' => [
                 'required',
-                Rule::unique('roles', 'name')->ignore($role?->id),
+                Rule::unique('roles', 'name')->ignore($roleId),
                 'min:2',
                 'max:50',
             ],
