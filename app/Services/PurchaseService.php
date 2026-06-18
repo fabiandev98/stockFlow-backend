@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Data\Purchase\PurchaseData;
 use App\Models\Material;
+use App\Models\Product;
+use App\Models\ProductBatch;
 use App\Models\Purchase;
 use App\Models\StockBatch;
 use App\Models\User;
@@ -37,6 +39,9 @@ class PurchaseService
                             $query->where('name', 'LIKE', "%$value%");
                         })
                         ->orWhereHas('items.material', function (Builder $query) use ($value) {
+                            $query->where('name', 'LIKE', "%$value%");
+                        })
+                        ->orWhereHas('items.product', function (Builder $query) use ($value) {
                             $query->where('name', 'LIKE', "%$value%");
                         });
                 }),
@@ -93,40 +98,125 @@ class PurchaseService
         $totalCost = 0;
 
         foreach ($data->items as $item) {
-            $material = $this->findMaterial((int) $item['material_id']);
             $quantity = (float) $item['quantity'];
             $unitCost = (float) $item['unit_cost'];
             $itemTotal = round($quantity * $unitCost, 2);
-            $expirationDate = $this->resolveExpirationDate($material, $data->purchase_date, $item);
 
-            $purchaseItem = $purchase->items()->create([
-                'material_id' => $material->id,
-                'quantity' => $quantity,
-                'unit_cost' => $unitCost,
-                'total_cost' => $itemTotal,
-                'expiration_date' => $expirationDate,
-            ]);
+            if (! empty($item['product_id'])) {
+                $this->createProductItemAndBatch($purchase, $data, $item, $quantity, $unitCost, $itemTotal);
+                $totalCost += $itemTotal;
 
-            StockBatch::create([
-                'material_id' => $material->id,
-                'purchase_item_id' => $purchaseItem->id,
-                'initial_quantity' => $quantity,
-                'available_quantity' => $quantity,
-                'unit_cost' => $unitCost,
-                'received_date' => $data->purchase_date,
-                'expiration_date' => $expirationDate,
-                'status' => 'available',
-            ]);
+                continue;
+            }
 
+            $this->createMaterialItemAndBatch($purchase, $data, $item, $quantity, $unitCost, $itemTotal);
             $totalCost += $itemTotal;
         }
 
         $purchase->update(['total_cost' => round($totalCost, 2)]);
     }
 
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    private function createMaterialItemAndBatch(
+        Purchase $purchase,
+        PurchaseData $data,
+        array $item,
+        float $quantity,
+        float $unitCost,
+        float $itemTotal,
+    ): void {
+        if (empty($item['material_id'])) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                'Purchase item must reference a material or a simple product'
+            );
+        }
+
+        $material = $this->findMaterial((int) $item['material_id']);
+        $expirationDate = $this->resolveExpirationDate($material, $data->purchase_date, $item);
+
+        $purchaseItem = $purchase->items()->create([
+            'material_id' => $material->id,
+            'product_id' => null,
+            'quantity' => $quantity,
+            'unit_cost' => $unitCost,
+            'total_cost' => $itemTotal,
+            'expiration_date' => $expirationDate,
+        ]);
+
+        StockBatch::create([
+            'material_id' => $material->id,
+            'purchase_item_id' => $purchaseItem->id,
+            'initial_quantity' => $quantity,
+            'available_quantity' => $quantity,
+            'unit_cost' => $unitCost,
+            'received_date' => $data->purchase_date,
+            'expiration_date' => $expirationDate,
+            'status' => 'available',
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    private function createProductItemAndBatch(
+        Purchase $purchase,
+        PurchaseData $data,
+        array $item,
+        float $quantity,
+        float $unitCost,
+        float $itemTotal,
+    ): void {
+        if (! empty($item['material_id'])) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                'Purchase item can reference either a material or a product, not both'
+            );
+        }
+
+        $product = $this->findSimpleProduct((int) $item['product_id']);
+        $expirationDate = $this->nullableString($item['expiration_date'] ?? null);
+
+        $purchaseItem = $purchase->items()->create([
+            'material_id' => null,
+            'product_id' => $product->id,
+            'quantity' => $quantity,
+            'unit_cost' => $unitCost,
+            'total_cost' => $itemTotal,
+            'expiration_date' => $expirationDate,
+        ]);
+
+        ProductBatch::create([
+            'product_id' => $product->id,
+            'purchase_item_id' => $purchaseItem->id,
+            'initial_quantity' => $quantity,
+            'available_quantity' => $quantity,
+            'unit_cost' => $unitCost,
+            'received_date' => $data->purchase_date,
+            'expiration_date' => $expirationDate,
+            'status' => 'available',
+        ]);
+    }
+
     private function findMaterial(int $materialId): Material
     {
         return Material::query()->findOrFail($materialId);
+    }
+
+    private function findSimpleProduct(int $productId): Product
+    {
+        $product = Product::query()->findOrFail($productId);
+
+        if ($product->is_composed) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                "Product '{$product->name}' is composed and must be produced from materials"
+            );
+        }
+
+        return $product;
     }
 
     /**
@@ -179,6 +269,17 @@ class PurchaseService
         }
 
         if (
+            ProductBatch::whereIn('purchase_item_id', $itemIds)
+                ->whereHas('productStockMovements')
+                ->exists()
+        ) {
+            throw new HttpException(
+                Response::HTTP_CONFLICT,
+                'Cannot modify a purchase with product batches that already have movements'
+            );
+        }
+
+        if (
             StockBatch::whereIn('purchase_item_id', $itemIds)
                 ->whereColumn('available_quantity', '!=', 'initial_quantity')
                 ->exists()
@@ -186,6 +287,17 @@ class PurchaseService
             throw new HttpException(
                 Response::HTTP_CONFLICT,
                 'Cannot modify a purchase with stock batches that have already changed quantity'
+            );
+        }
+
+        if (
+            ProductBatch::whereIn('purchase_item_id', $itemIds)
+                ->whereColumn('available_quantity', '!=', 'initial_quantity')
+                ->exists()
+        ) {
+            throw new HttpException(
+                Response::HTTP_CONFLICT,
+                'Cannot modify a purchase with product batches that have already changed quantity'
             );
         }
     }
@@ -196,6 +308,7 @@ class PurchaseService
 
         if ($itemIds->isNotEmpty()) {
             StockBatch::whereIn('purchase_item_id', $itemIds)->delete();
+            ProductBatch::whereIn('purchase_item_id', $itemIds)->delete();
             $purchase->items()->delete();
         }
     }
@@ -206,7 +319,9 @@ class PurchaseService
             'supplier',
             'user',
             'items.material.category',
+            'items.product.category',
             'items.stockBatches',
+            'items.productBatches',
         ]) ?? $purchase;
     }
 }

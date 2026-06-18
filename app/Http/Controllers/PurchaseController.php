@@ -46,7 +46,9 @@ class PurchaseController extends Controller
                 'supplier',
                 'user',
                 'items.material.category',
+                'items.product.category',
                 'items.stockBatches',
+                'items.productBatches',
             ])->loadCount('items')
         );
     }

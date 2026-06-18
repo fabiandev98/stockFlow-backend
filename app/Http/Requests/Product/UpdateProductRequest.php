@@ -34,8 +34,9 @@ class UpdateProductRequest extends FormRequest
                 Rule::unique('products', 'name')->ignore($productId),
             ],
             'sale_price' => 'required|numeric|min:0',
+            'is_composed' => 'sometimes|boolean',
             'is_active' => 'sometimes|boolean',
-            'compositions' => 'required|array|min:1',
+            'compositions' => 'nullable|array',
             'compositions.*.material_id' => 'required|exists:materials,id',
             'compositions.*.quantity_required' => 'required|numeric|min:0.01',
             'compositions.*.unit' => 'required|string|max:50',
@@ -46,7 +47,9 @@ class UpdateProductRequest extends FormRequest
     {
         return ProductData::from([
             ...$this->validated(),
+            'is_composed' => $this->boolean('is_composed', true),
             'is_active' => $this->boolean('is_active', true),
+            'compositions' => $this->validated('compositions', []),
         ]);
     }
 

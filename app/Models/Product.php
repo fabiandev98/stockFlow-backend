@@ -18,11 +18,13 @@ class Product extends Model
         'product_category_id',
         'name',
         'sale_price',
+        'is_composed',
         'is_active',
     ];
 
     protected $casts = [
         'sale_price' => 'decimal:2',
+        'is_composed' => 'boolean',
         'is_active' => 'boolean',
     ];
 
@@ -40,6 +42,22 @@ class Product extends Model
     public function compositions(): HasMany
     {
         return $this->hasMany(ProductComposition::class);
+    }
+
+    /**
+     * @return HasMany<ProductBatch, $this>
+     */
+    public function productBatches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class);
+    }
+
+    /**
+     * @return HasMany<ProductStockMovement, $this>
+     */
+    public function productStockMovements(): HasMany
+    {
+        return $this->hasMany(ProductStockMovement::class);
     }
 
     /**

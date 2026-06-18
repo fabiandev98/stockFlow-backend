@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Material;
+use App\Models\Product;
 use App\Models\StockBatch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -49,6 +50,38 @@ class InventoryService
                 'name',
                 'unit',
                 'minimum_stock',
+                'available_stock',
+                'next_expiration_date',
+            ]);
+    }
+
+    /**
+     * @return QueryBuilder<Product>
+     */
+    public function productSummaryQueryBuilder(): QueryBuilder
+    {
+        return QueryBuilder::for(
+            Product::query()
+                ->where('is_composed', false)
+                ->with('category')
+                ->withSum('productBatches as available_stock', 'available_quantity')
+                ->withMin('productBatches as next_expiration_date', 'expiration_date')
+                ->orderBy('name')
+        )
+            ->allowedFilters([
+                AllowedFilter::exact('is_active'),
+                AllowedFilter::exact('product_category_id'),
+                AllowedFilter::callback('global', function (Builder $query, $value) {
+                    $query
+                        ->where('name', 'LIKE', "%$value%")
+                        ->orWhereHas('category', function (Builder $query) use ($value) {
+                            $query->where('name', 'LIKE', "%$value%");
+                        });
+                }),
+            ])
+            ->allowedSorts([
+                'name',
+                'sale_price',
                 'available_stock',
                 'next_expiration_date',
             ]);

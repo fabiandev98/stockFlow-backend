@@ -38,7 +38,7 @@ class ProductController extends Controller
     {
         $this->authorize('view', $product);
 
-        return new ProductResource($product->load(['category', 'compositions.material.category']));
+        return new ProductResource($product->load(['category', 'compositions.material.category', 'productBatches']));
     }
 
     public function update(UpdateProductRequest $request, Product $product): ProductResource

@@ -71,4 +71,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/stock-movements', StockMovementController::class)->only(['index', 'store', 'show']);
     Route::get('/inventory/alerts', [InventoryController::class, 'alerts'])->name('inventory.alerts');
     Route::get('/inventory/materials', [InventoryController::class, 'materials'])->name('inventory.materials');
+    Route::get('/inventory/products', [InventoryController::class, 'products'])->name('inventory.products');
 });

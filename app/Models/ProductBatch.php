@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class SaleItem extends Model
+class ProductBatch extends Model
 {
     /**
      * @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory>
@@ -15,25 +15,23 @@ class SaleItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'sale_id',
         'product_id',
-        'quantity',
-        'unit_price',
-        'total_price',
+        'purchase_item_id',
+        'initial_quantity',
+        'available_quantity',
+        'unit_cost',
+        'received_date',
+        'expiration_date',
+        'status',
     ];
 
     protected $casts = [
-        'unit_price' => 'decimal:2',
-        'total_price' => 'decimal:2',
+        'initial_quantity' => 'decimal:2',
+        'available_quantity' => 'decimal:2',
+        'unit_cost' => 'decimal:4',
+        'received_date' => 'date',
+        'expiration_date' => 'date',
     ];
-
-    /**
-     * @return BelongsTo<Sale, $this>
-     */
-    public function sale(): BelongsTo
-    {
-        return $this->belongsTo(Sale::class);
-    }
 
     /**
      * @return BelongsTo<Product, $this>
@@ -44,11 +42,11 @@ class SaleItem extends Model
     }
 
     /**
-     * @return HasMany<StockMovement, $this>
+     * @return BelongsTo<PurchaseItem, $this>
      */
-    public function stockMovements(): HasMany
+    public function purchaseItem(): BelongsTo
     {
-        return $this->hasMany(StockMovement::class);
+        return $this->belongsTo(PurchaseItem::class);
     }
 
     /**

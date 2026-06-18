@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\DenebPermission;
 use App\Http\Resources\InventoryMaterialResource;
+use App\Http\Resources\InventoryProductResource;
 use App\Http\Resources\StockBatchResource;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
@@ -22,6 +23,15 @@ class InventoryController extends Controller
 
         return InventoryMaterialResource::collection(
             $this->inventoryService->materialSummaryQueryBuilder()->paginate(25)
+        );
+    }
+
+    public function products(Request $request): AnonymousResourceCollection
+    {
+        $request->user()?->hasPermissionTo(DenebPermission::INVENTORY_READ) || abort(403);
+
+        return InventoryProductResource::collection(
+            $this->inventoryService->productSummaryQueryBuilder()->paginate(25)
         );
     }
 

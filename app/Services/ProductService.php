@@ -22,10 +22,12 @@ class ProductService
             Product::query()
                 ->with('category')
                 ->withCount('compositions')
+                ->withSum('productBatches as simple_available_stock', 'available_quantity')
                 ->orderBy('name')
         )
             ->allowedFilters([
-                'is_active',
+                AllowedFilter::exact('is_active'),
+                AllowedFilter::exact('is_composed'),
                 AllowedFilter::exact('product_category_id'),
                 AllowedFilter::callback('global', function (Builder $query, $value) {
                     $query
@@ -44,6 +46,7 @@ class ProductService
                 'product_category_id' => $data->product_category_id,
                 'name' => $data->name,
                 'sale_price' => $data->sale_price,
+                'is_composed' => $data->is_composed,
                 'is_active' => $data->is_active,
             ]);
 
@@ -60,6 +63,7 @@ class ProductService
                 'product_category_id' => $data->product_category_id,
                 'name' => $data->name,
                 'sale_price' => $data->sale_price,
+                'is_composed' => $data->is_composed,
                 'is_active' => $data->is_active,
             ]);
 
@@ -78,12 +82,30 @@ class ProductService
             );
         }
 
+        if ($product->productBatches()->exists()) {
+            throw new HttpException(
+                Response::HTTP_CONFLICT,
+                'Cannot delete a product with inventory batches'
+            );
+        }
+
         $product->delete();
     }
 
     private function rebuildCompositions(Product $product, ProductData $data): void
     {
         $product->compositions()->delete();
+
+        if (! $data->is_composed) {
+            return;
+        }
+
+        if (count($data->compositions) === 0) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                'Composed products require at least one material'
+            );
+        }
 
         foreach ($data->compositions as $composition) {
             $product->compositions()->create([
@@ -99,6 +121,7 @@ class ProductService
         return $product->fresh([
             'category',
             'compositions.material.category',
+            'productBatches',
         ]) ?? $product;
     }
 }

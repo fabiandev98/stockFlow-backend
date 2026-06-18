@@ -13,6 +13,7 @@ class ProductData extends Data
         public readonly ?int $product_category_id,
         public readonly string $name,
         public readonly float $sale_price,
+        public readonly bool $is_composed,
         public readonly bool $is_active,
         public readonly array $compositions,
     ) {}

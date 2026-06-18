@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Data\Sale\SaleData;
 use App\Models\Product;
+use App\Models\ProductBatch;
+use App\Models\ProductStockMovement;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockBatch;
@@ -72,7 +74,11 @@ class SaleService
                     'total_price' => $totalPrice,
                 ]);
 
-                $this->consumeProductMaterials($saleItem, $product, $quantity, $user);
+                if ($product->is_composed) {
+                    $this->consumeProductMaterials($saleItem, $product, $quantity, $user);
+                } else {
+                    $this->consumeSimpleProductBatches($saleItem, $product, $quantity, $user);
+                }
 
                 $totalAmount += $totalPrice;
             }
@@ -92,12 +98,76 @@ class SaleService
             );
         }
 
-        if ($product->compositions->isEmpty()) {
+        if ($product->is_composed && $product->compositions->isEmpty()) {
             throw new HttpException(
                 Response::HTTP_UNPROCESSABLE_ENTITY,
                 "Product {$product->name} has no composition"
             );
         }
+    }
+
+    private function consumeSimpleProductBatches(
+        SaleItem $saleItem,
+        Product $product,
+        int $soldQuantity,
+        User $user,
+    ): void {
+        $availableQuantity = $this->availableProductQuantity($product->id);
+
+        if ($soldQuantity > $availableQuantity) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                "Insufficient stock for {$product->name}"
+            );
+        }
+
+        $remainingQuantity = (float) $soldQuantity;
+
+        $batches = ProductBatch::query()
+            ->where('product_id', $product->id)
+            ->where('status', 'available')
+            ->where('available_quantity', '>', 0)
+            ->orderByRaw('expiration_date is null')
+            ->orderBy('expiration_date')
+            ->orderBy('received_date')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($batches as $batch) {
+            if ($remainingQuantity <= 0) {
+                break;
+            }
+
+            $batchAvailable = (float) $batch->available_quantity;
+            $quantityToConsume = min($remainingQuantity, $batchAvailable);
+            $newAvailableQuantity = round($batchAvailable - $quantityToConsume, 2);
+
+            $batch->update([
+                'available_quantity' => $newAvailableQuantity,
+                'status' => $newAvailableQuantity > 0 ? 'available' : 'depleted',
+            ]);
+
+            ProductStockMovement::create([
+                'product_id' => $product->id,
+                'product_batch_id' => $batch->id,
+                'sale_item_id' => $saleItem->id,
+                'user_id' => $user->id,
+                'type' => 'sale',
+                'quantity' => round($quantityToConsume, 2),
+                'reason' => "Sale #{$saleItem->sale_id}",
+                'movement_date' => now(),
+            ]);
+
+            $remainingQuantity = round($remainingQuantity - $quantityToConsume, 2);
+        }
+    }
+
+    private function availableProductQuantity(int $productId): float
+    {
+        return (float) ProductBatch::query()
+            ->where('product_id', $productId)
+            ->where('status', 'available')
+            ->sum('available_quantity');
     }
 
     private function consumeProductMaterials(
@@ -188,6 +258,8 @@ class SaleService
             'items.product.category',
             'items.stockMovements.material',
             'items.stockMovements.stockBatch',
+            'items.productStockMovements.product',
+            'items.productStockMovements.productBatch',
         ])?->loadCount('items') ?? $sale;
     }
 }

@@ -17,6 +17,7 @@ class PurchaseItem extends Model
     protected $fillable = [
         'purchase_id',
         'material_id',
+        'product_id',
         'quantity',
         'unit_cost',
         'total_cost',
@@ -47,10 +48,26 @@ class PurchaseItem extends Model
     }
 
     /**
+     * @return BelongsTo<Product, $this>
+     */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    /**
      * @return HasMany<StockBatch, $this>
      */
     public function stockBatches(): HasMany
     {
         return $this->hasMany(StockBatch::class);
+    }
+
+    /**
+     * @return HasMany<ProductBatch, $this>
+     */
+    public function productBatches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class);
     }
 }

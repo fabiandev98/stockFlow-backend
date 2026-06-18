@@ -2,14 +2,14 @@
 
 namespace App\Http\Resources;
 
-use App\Models\SaleItem;
+use App\Models\ProductStockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin SaleItem
+ * @mixin ProductStockMovement
  */
-class SaleItemResource extends JsonResource
+class ProductStockMovementResource extends JsonResource
 {
     /**
      * @return array<string, mixed>
@@ -18,14 +18,17 @@ class SaleItemResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'sale_id' => $this->sale_id,
             'product_id' => $this->product_id,
             'product' => new ProductResource($this->whenLoaded('product')),
+            'product_batch_id' => $this->product_batch_id,
+            'product_batch' => new ProductBatchResource($this->whenLoaded('productBatch')),
+            'sale_item_id' => $this->sale_item_id,
+            'user_id' => $this->user_id,
+            'user' => new UserResource($this->whenLoaded('user')),
+            'type' => $this->type,
             'quantity' => $this->quantity,
-            'unit_price' => $this->unit_price,
-            'total_price' => $this->total_price,
-            'stock_movements' => StockMovementResource::collection($this->whenLoaded('stockMovements')),
-            'product_stock_movements' => ProductStockMovementResource::collection($this->whenLoaded('productStockMovements')),
+            'reason' => $this->reason,
+            'movement_date' => $this->movement_date,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

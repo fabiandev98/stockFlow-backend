@@ -44,6 +44,8 @@ class SaleController extends Controller
                 'items.product.category',
                 'items.stockMovements.material',
                 'items.stockMovements.stockBatch',
+                'items.productStockMovements.product',
+                'items.productStockMovements.productBatch',
             ])->loadCount('items')
         );
     }
