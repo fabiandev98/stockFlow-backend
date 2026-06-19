@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MaterialCategoryController;
 use App\Http\Controllers\MaterialController;
@@ -55,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification'])->name('auth.resend-verification');
 
     Route::get('/me', [UserController::class, 'showMe'])->name('me');
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->name('dashboard.summary');
     Route::get('/users/roles-below', [UserController::class, 'rolesBelow'])->name('users.rolesBelow');
     Route::patch('/users/{user}/password', [UserController::class, 'updatePassword'])->name('users.updatePassword');
     Route::apiResource('/users', UserController::class);

@@ -181,9 +181,11 @@ class SaleService
             $availableQuantity = $this->availableMaterialQuantity((int) $composition->material_id);
 
             if ($requiredQuantity > $availableQuantity) {
+                $materialName = $composition->material?->name ?? "material ID {$composition->material_id}";
+
                 throw new HttpException(
                     Response::HTTP_UNPROCESSABLE_ENTITY,
-                    "Insufficient stock for {$composition->material->name}"
+                    "Insufficient stock for {$materialName}"
                 );
             }
 
