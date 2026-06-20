@@ -46,7 +46,7 @@ class MaterialCategoryService
         if ($materialCategory->materials()->exists()) {
             throw new HttpException(
                 Response::HTTP_CONFLICT,
-                'Cannot delete a category assigned to materials'
+                __('errors.material_categories.delete_assigned')
             );
         }
 

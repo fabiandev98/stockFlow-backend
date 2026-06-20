@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 use Spatie\QueryBuilder\QueryBuilder;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class MaterialService
 {
@@ -69,6 +71,34 @@ class MaterialService
 
     public function delete(Material $material): void
     {
+        if ($material->productCompositions()->exists()) {
+            throw new HttpException(
+                Response::HTTP_CONFLICT,
+                __('errors.materials.delete_used_in_compositions')
+            );
+        }
+
+        if ($material->purchaseItems()->exists()) {
+            throw new HttpException(
+                Response::HTTP_CONFLICT,
+                __('errors.materials.delete_used_in_purchases')
+            );
+        }
+
+        if ($material->stockBatches()->exists()) {
+            throw new HttpException(
+                Response::HTTP_CONFLICT,
+                __('errors.materials.delete_has_inventory')
+            );
+        }
+
+        if ($material->stockMovements()->exists()) {
+            throw new HttpException(
+                Response::HTTP_CONFLICT,
+                __('errors.materials.delete_has_movements')
+            );
+        }
+
         $material->delete();
     }
 }

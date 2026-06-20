@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StockMovement\StoreStockMovementRequest;
 use App\Http\Resources\StockMovementResource;
 use App\Models\StockMovement;
+use App\Models\User;
 use App\Services\StockMovementService;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Symfony\Component\HttpFoundation\Response;
 
 class StockMovementController extends Controller
 {
@@ -25,9 +27,15 @@ class StockMovementController extends Controller
 
     public function store(StoreStockMovementRequest $request): StockMovementResource
     {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(Response::HTTP_UNAUTHORIZED, __('auth.failed'));
+        }
+
         $stockMovement = $this->stockMovementService->create(
             $request->toDto(),
-            $request->user()
+            $user
         );
 
         return new StockMovementResource($stockMovement);

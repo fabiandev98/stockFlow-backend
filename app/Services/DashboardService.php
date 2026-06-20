@@ -110,27 +110,26 @@ class DashboardService
      */
     private function topProducts(Carbon $start, Carbon $end): array
     {
-        return SaleItem::query()
+        $rows = DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->join('products', 'products.id', '=', 'sale_items.product_id')
             ->whereBetween('sales.sale_date', [$start, $end])
             ->groupBy('sale_items.product_id', 'products.name')
             ->orderByDesc(DB::raw('SUM(sale_items.quantity)'))
             ->limit(5)
-            ->get([
-                'sale_items.product_id',
-                'products.name as product_name',
-                DB::raw('SUM(sale_items.quantity) as quantity'),
-                DB::raw('SUM(sale_items.total_price) as total'),
-            ])
+            ->select('sale_items.product_id', 'products.name as product_name')
+            ->selectRaw('SUM(sale_items.quantity) as quantity')
+            ->selectRaw('SUM(sale_items.total_price) as total')
+            ->get()
             ->map(fn ($item) => [
-                'product_id' => (int) $item->product_id,
-                'product_name' => (string) $item->product_name,
-                'quantity' => number_format((float) $item->quantity, 2, '.', ''),
-                'total' => number_format((float) $item->total, 2, '.', ''),
+                'product_id' => (int) data_get($item, 'product_id'),
+                'product_name' => (string) data_get($item, 'product_name'),
+                'quantity' => number_format((float) data_get($item, 'quantity'), 2, '.', ''),
+                'total' => number_format((float) data_get($item, 'total'), 2, '.', ''),
             ])
-            ->values()
             ->all();
+
+        return array_values($rows);
     }
 
     /**
@@ -138,19 +137,19 @@ class DashboardService
      */
     private function salesByDay(Carbon $start, Carbon $end): array
     {
-        return Sale::query()
+        $rows = DB::table('sales')
             ->whereBetween('sale_date', [$start, $end])
             ->groupBy(DB::raw('DATE(sale_date)'))
             ->orderBy(DB::raw('DATE(sale_date)'))
-            ->get([
-                DB::raw('DATE(sale_date) as date'),
-                DB::raw('SUM(total_amount) as total'),
-            ])
+            ->selectRaw('DATE(sale_date) as date')
+            ->selectRaw('SUM(total_amount) as total')
+            ->get()
             ->map(fn ($item) => [
-                'date' => (string) $item->date,
-                'total' => number_format((float) $item->total, 2, '.', ''),
+                'date' => (string) data_get($item, 'date'),
+                'total' => number_format((float) data_get($item, 'total'), 2, '.', ''),
             ])
-            ->values()
             ->all();
+
+        return array_values($rows);
     }
 }

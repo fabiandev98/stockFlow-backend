@@ -2,10 +2,13 @@
 
 use App\Http\Middleware\ForceJson;
 use App\Http\Middleware\SetApiLocale;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Symfony\Component\HttpFoundation\Request;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,11 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(
             [],
-            Request::HEADER_X_FORWARDED_FOR |
-            Request::HEADER_X_FORWARDED_HOST |
-            Request::HEADER_X_FORWARDED_PORT |
-            Request::HEADER_X_FORWARDED_PROTO |
-            Request::HEADER_X_FORWARDED_AWS_ELB
+            SymfonyRequest::HEADER_X_FORWARDED_FOR |
+            SymfonyRequest::HEADER_X_FORWARDED_HOST |
+            SymfonyRequest::HEADER_X_FORWARDED_PORT |
+            SymfonyRequest::HEADER_X_FORWARDED_PROTO |
+            SymfonyRequest::HEADER_X_FORWARDED_AWS_ELB
         );
 
         $middleware->preventRequestsDuringMaintenance([
@@ -38,5 +41,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (QueryException $exception, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            if (($exception->errorInfo[0] ?? null) !== '23000') {
+                return null;
+            }
+
+            return response()->json([
+                'message' => __('errors.database.delete_restricted'),
+            ], Response::HTTP_CONFLICT);
+        });
     })->create();

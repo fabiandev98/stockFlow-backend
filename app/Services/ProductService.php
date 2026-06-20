@@ -78,14 +78,14 @@ class ProductService
         if ($product->saleItems()->exists()) {
             throw new HttpException(
                 Response::HTTP_CONFLICT,
-                'Cannot delete a product already used in sales'
+                __('errors.products.delete_used_in_sales')
             );
         }
 
         if ($product->productBatches()->exists()) {
             throw new HttpException(
                 Response::HTTP_CONFLICT,
-                'Cannot delete a product with inventory batches'
+                __('errors.products.delete_has_inventory')
             );
         }
 
@@ -103,7 +103,7 @@ class ProductService
         if (count($data->compositions) === 0) {
             throw new HttpException(
                 Response::HTTP_UNPROCESSABLE_ENTITY,
-                'Composed products require at least one material'
+                __('errors.products.composition_required')
             );
         }
 

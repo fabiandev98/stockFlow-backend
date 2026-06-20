@@ -46,7 +46,7 @@ class ProductCategoryService
         if ($productCategory->products()->exists()) {
             throw new HttpException(
                 Response::HTTP_CONFLICT,
-                'Cannot delete a category assigned to products'
+                __('errors.product_categories.delete_assigned')
             );
         }
 

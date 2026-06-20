@@ -181,7 +181,9 @@ class SaleService
             $availableQuantity = $this->availableMaterialQuantity((int) $composition->material_id);
 
             if ($requiredQuantity > $availableQuantity) {
-                $materialName = $composition->material?->name ?? "material ID {$composition->material_id}";
+                $materialName = $composition->material
+                    ? $composition->material->name
+                    : "material ID {$composition->material_id}";
 
                 throw new HttpException(
                     Response::HTTP_UNPROCESSABLE_ENTITY,

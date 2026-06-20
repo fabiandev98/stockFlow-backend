@@ -56,7 +56,7 @@ class SupplierService
         if ($supplier->purchases()->exists()) {
             throw new HttpException(
                 Response::HTTP_CONFLICT,
-                'Cannot delete a supplier assigned to purchases'
+                __('errors.suppliers.delete_assigned')
             );
         }
 
