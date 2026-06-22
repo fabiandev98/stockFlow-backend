@@ -22,7 +22,7 @@ class StoreSaleRequest extends FormRequest
             'sale_date' => 'required|date',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => 'required|distinct|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
         ];
     }
