@@ -48,13 +48,19 @@ class UpdatePasswordRequest extends FormRequest
             abort(Response::HTTP_BAD_REQUEST, 'There must be a user to be updated.');
         }
 
+        $requiresCurrentPassword = $this->user()?->id === $userToUpdate->id;
+
         return [
             'current_password' => [
-                'required',
+                $requiresCurrentPassword ? 'required' : 'nullable',
                 'string',
                 'max:191',
                 'min:6',
-                function ($attribute, $value, $fail) use ($userToUpdate) {
+                function ($attribute, $value, $fail) use ($requiresCurrentPassword, $userToUpdate) {
+                    if (! $requiresCurrentPassword || blank($value)) {
+                        return;
+                    }
+
                     if (
                         ! Hash::check($value, $userToUpdate->password)
                     ) {
