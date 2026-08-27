@@ -46,6 +46,7 @@ enum DenebPermission: string
 
     case SALES_CREATE = 'sales-create';
     case SALES_READ = 'sales-read';
+    case SALES_CANCEL = 'sales-cancel';
 
     case STOCK_BATCHES_READ = 'stock-batches-read';
 

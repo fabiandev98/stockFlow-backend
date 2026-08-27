@@ -79,6 +79,7 @@ class StockFlowDemoSeeder extends Seeder
                     DenebPermission::PURCHASES_DELETE,
                     DenebPermission::SALES_CREATE,
                     DenebPermission::SALES_READ,
+                    DenebPermission::SALES_CANCEL,
                     DenebPermission::STOCK_BATCHES_READ,
                     DenebPermission::STOCK_MOVEMENTS_CREATE,
                     DenebPermission::STOCK_MOVEMENTS_READ,
@@ -111,6 +112,7 @@ class StockFlowDemoSeeder extends Seeder
                     DenebPermission::PRODUCTS_READ,
                     DenebPermission::SALES_CREATE,
                     DenebPermission::SALES_READ,
+                    DenebPermission::SALES_CANCEL,
                     DenebPermission::INVENTORY_READ,
                 ],
             ],
@@ -405,6 +407,11 @@ class StockFlowDemoSeeder extends Seeder
         $sale = Sale::query()->create([
             'user_id' => $user->id,
             'sale_date' => Carbon::today()->toDateString(),
+            'covers' => 2,
+            'subtotal_amount' => round($quantity * $unitPrice, 2),
+            'discount_amount' => 0,
+            'tax_rate' => 0,
+            'tax_amount' => 0,
             'total_amount' => round($quantity * $unitPrice, 2),
             'notes' => 'Demo sale consuming product composition',
         ]);

@@ -13,5 +13,8 @@ class SaleData extends Data
         public string $sale_date,
         public ?string $notes,
         public array $items,
+        public ?int $covers = null,
+        public float $discount_amount = 0,
+        public float $tax_rate = 0,
     ) {}
 }

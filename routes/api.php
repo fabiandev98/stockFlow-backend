@@ -7,6 +7,7 @@ use App\Http\Controllers\MaterialCategoryController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductProductionController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
@@ -67,7 +68,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/suppliers', SupplierController::class);
     Route::apiResource('/product-categories', ProductCategoryController::class);
     Route::apiResource('/products', ProductController::class);
+    Route::post('/products/{product}/productions', [ProductProductionController::class, 'store'])->name('products.productions.store');
     Route::apiResource('/purchases', PurchaseController::class);
+    Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
     Route::apiResource('/sales', SaleController::class)->only(['index', 'store', 'show']);
     Route::apiResource('/stock-batches', StockBatchController::class)->only(['index', 'show']);
     Route::apiResource('/stock-movements', StockMovementController::class)->only(['index', 'store', 'show']);

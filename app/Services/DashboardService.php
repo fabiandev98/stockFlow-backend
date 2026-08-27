@@ -23,6 +23,9 @@ class DashboardService
         $start = $startDate ? Carbon::parse($startDate)->startOfDay() : $end->copy()->startOfMonth();
         $today = Carbon::today();
         $expirationLimit = $today->copy()->addDays(max(1, $expirationWindowDays));
+        $salesQuery = Sale::query()
+            ->completed()
+            ->whereBetween('sale_date', [$start, $end]);
 
         return [
             'period' => [
@@ -31,12 +34,13 @@ class DashboardService
                 'expiration_window_days' => max(1, $expirationWindowDays),
             ],
             'sales' => [
-                'total' => number_format((float) Sale::query()->whereBetween('sale_date', [$start, $end])->sum('total_amount'), 2, '.', ''),
-                'count' => Sale::query()->whereBetween('sale_date', [$start, $end])->count(),
+                'total' => number_format((float) (clone $salesQuery)->sum('total_amount'), 2, '.', ''),
+                'count' => (clone $salesQuery)->count(),
                 'items_sold' => (float) SaleItem::query()
-                    ->whereHas('sale', fn ($query) => $query->whereBetween('sale_date', [$start, $end]))
+                    ->whereHas('sale', fn ($query) => $query->completed()->whereBetween('sale_date', [$start, $end]))
                     ->sum('quantity'),
             ],
+            'profitability' => $this->profitability($start, $end),
             'purchases' => [
                 'total' => number_format((float) Purchase::query()->whereBetween('purchase_date', [$start, $end])->sum('total_cost'), 2, '.', ''),
                 'count' => Purchase::query()->whereBetween('purchase_date', [$start, $end])->count(),
@@ -81,6 +85,63 @@ class DashboardService
         return round($materialValue + $productValue, 2);
     }
 
+    /**
+     * @return array{gross_sales: string, discounts: string, net_sales: string, taxes: string, cogs: string, gross_profit: string, food_cost_percentage: string, gross_margin_percentage: string, waste_cost: string, actual_food_cost: string, actual_food_cost_percentage: string, adjusted_gross_profit: string}
+     */
+    private function profitability(Carbon $start, Carbon $end): array
+    {
+        $sales = Sale::query()
+            ->completed()
+            ->whereBetween('sale_date', [$start, $end]);
+        $grossSales = (float) (clone $sales)->sum('subtotal_amount');
+        $discounts = (float) (clone $sales)->sum('discount_amount');
+        $taxes = (float) (clone $sales)->sum('tax_amount');
+        $netSales = round($grossSales - $discounts, 2);
+        $materialCogs = (float) DB::table('stock_movements')
+            ->join('stock_batches', 'stock_batches.id', '=', 'stock_movements.stock_batch_id')
+            ->join('sale_items', 'sale_items.id', '=', 'stock_movements.sale_item_id')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->where('stock_movements.type', 'sale')
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sale_date', [$start, $end])
+            ->selectRaw('COALESCE(SUM(stock_movements.quantity * stock_batches.unit_cost), 0) as total')
+            ->value('total');
+        $productCogs = (float) DB::table('product_stock_movements')
+            ->join('product_batches', 'product_batches.id', '=', 'product_stock_movements.product_batch_id')
+            ->join('sale_items', 'sale_items.id', '=', 'product_stock_movements.sale_item_id')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->where('product_stock_movements.type', 'sale')
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sale_date', [$start, $end])
+            ->selectRaw('COALESCE(SUM(product_stock_movements.quantity * product_batches.unit_cost), 0) as total')
+            ->value('total');
+        $cogs = round($materialCogs + $productCogs, 2);
+        $grossProfit = round($netSales - $cogs, 2);
+        $wasteCost = (float) DB::table('stock_movements')
+            ->join('stock_batches', 'stock_batches.id', '=', 'stock_movements.stock_batch_id')
+            ->whereIn('stock_movements.type', ['waste', 'expired'])
+            ->whereBetween('stock_movements.movement_date', [$start, $end])
+            ->selectRaw('COALESCE(SUM(stock_movements.quantity * stock_batches.unit_cost), 0) as total')
+            ->value('total');
+        $actualFoodCost = round($cogs + $wasteCost, 2);
+        $adjustedGrossProfit = round($netSales - $actualFoodCost, 2);
+
+        return [
+            'gross_sales' => number_format($grossSales, 2, '.', ''),
+            'discounts' => number_format($discounts, 2, '.', ''),
+            'net_sales' => number_format($netSales, 2, '.', ''),
+            'taxes' => number_format($taxes, 2, '.', ''),
+            'cogs' => number_format($cogs, 2, '.', ''),
+            'gross_profit' => number_format($grossProfit, 2, '.', ''),
+            'food_cost_percentage' => number_format($netSales > 0 ? $cogs / $netSales * 100 : 0, 2, '.', ''),
+            'gross_margin_percentage' => number_format($netSales > 0 ? $grossProfit / $netSales * 100 : 0, 2, '.', ''),
+            'waste_cost' => number_format($wasteCost, 2, '.', ''),
+            'actual_food_cost' => number_format($actualFoodCost, 2, '.', ''),
+            'actual_food_cost_percentage' => number_format($netSales > 0 ? $actualFoodCost / $netSales * 100 : 0, 2, '.', ''),
+            'adjusted_gross_profit' => number_format($adjustedGrossProfit, 2, '.', ''),
+        ];
+    }
+
     private function expiredBatchesCount(Carbon $today): int
     {
         return StockBatch::query()
@@ -119,6 +180,7 @@ class DashboardService
         $rows = DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->join('products', 'products.id', '=', 'sale_items.product_id')
+            ->where('sales.status', 'completed')
             ->whereBetween('sales.sale_date', [$start, $end])
             ->groupBy('sale_items.product_id', 'products.name')
             ->orderByDesc(DB::raw('SUM(sale_items.quantity)'))
@@ -145,6 +207,7 @@ class DashboardService
     {
         $itemsByDay = DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->where('sales.status', 'completed')
             ->whereBetween('sales.sale_date', [$start, $end])
             ->groupBy(DB::raw('DATE(sales.sale_date)'))
             ->selectRaw('DATE(sales.sale_date) as date')
@@ -152,6 +215,7 @@ class DashboardService
             ->pluck('items', 'date');
 
         $rows = DB::table('sales')
+            ->where('status', 'completed')
             ->whereBetween('sale_date', [$start, $end])
             ->groupBy(DB::raw('DATE(sale_date)'))
             ->orderBy(DB::raw('DATE(sale_date)'))

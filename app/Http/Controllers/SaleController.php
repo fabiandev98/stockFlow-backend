@@ -41,6 +41,7 @@ class SaleController extends Controller
         return new SaleResource(
             $sale->load([
                 'user',
+                'cancelledBy',
                 'items.product.category',
                 'items.stockMovements.material',
                 'items.stockMovements.stockBatch',
@@ -49,4 +50,15 @@ class SaleController extends Controller
             ])->loadCount('items')
         );
     }
+
+    public function cancel(CancelSaleRequest $request, Sale $sale): SaleResource
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        return new SaleResource(
+            $this->saleService->cancel($sale, $request->string('reason')->toString(), $user)
+        );
+    }
 }
+use App\Http\Requests\Sale\CancelSaleRequest;
