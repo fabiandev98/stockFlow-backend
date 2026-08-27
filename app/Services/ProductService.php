@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Data\Product\ProductData;
+use App\Models\Material;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +48,8 @@ class ProductService
                 'name' => $data->name,
                 'sale_price' => $data->sale_price,
                 'is_composed' => $data->is_composed,
+                'production_mode' => $data->is_composed ? $data->production_mode : 'on_sale',
+                'shelf_life_days' => $data->is_composed && $data->production_mode === 'batch' ? $data->shelf_life_days : null,
                 'is_active' => $data->is_active,
             ]);
 
@@ -64,6 +67,8 @@ class ProductService
                 'name' => $data->name,
                 'sale_price' => $data->sale_price,
                 'is_composed' => $data->is_composed,
+                'production_mode' => $data->is_composed ? $data->production_mode : 'on_sale',
+                'shelf_life_days' => $data->is_composed && $data->production_mode === 'batch' ? $data->shelf_life_days : null,
                 'is_active' => $data->is_active,
             ]);
 
@@ -108,10 +113,12 @@ class ProductService
         }
 
         foreach ($data->compositions as $composition) {
+            $material = Material::query()->findOrFail((int) $composition['material_id']);
+
             $product->compositions()->create([
-                'material_id' => (int) $composition['material_id'],
+                'material_id' => $material->id,
                 'quantity_required' => (float) $composition['quantity_required'],
-                'unit' => (string) $composition['unit'],
+                'unit' => $material->unit,
             ]);
         }
     }

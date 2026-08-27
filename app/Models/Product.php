@@ -19,12 +19,15 @@ class Product extends Model
         'name',
         'sale_price',
         'is_composed',
+        'production_mode',
+        'shelf_life_days',
         'is_active',
     ];
 
     protected $casts = [
         'sale_price' => 'decimal:2',
         'is_composed' => 'boolean',
+        'shelf_life_days' => 'integer',
         'is_active' => 'boolean',
     ];
 
@@ -50,6 +53,12 @@ class Product extends Model
     public function productBatches(): HasMany
     {
         return $this->hasMany(ProductBatch::class);
+    }
+
+    /** @return HasMany<ProductProduction, $this> */
+    public function productions(): HasMany
+    {
+        return $this->hasMany(ProductProduction::class);
     }
 
     /**

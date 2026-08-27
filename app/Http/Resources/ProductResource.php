@@ -26,6 +26,8 @@ class ProductResource extends JsonResource
             'name' => $this->name,
             'sale_price' => $this->sale_price,
             'is_composed' => $this->is_composed,
+            'production_mode' => $this->production_mode,
+            'shelf_life_days' => $this->shelf_life_days,
             'is_active' => $this->is_active,
             'available_to_sell' => number_format($availableToSell, 2, '.', ''),
             'compositions_count' => $this->whenCounted('compositions'),
@@ -38,9 +40,13 @@ class ProductResource extends JsonResource
 
     private function availableToSell(): float
     {
-        if (! $this->is_composed) {
+        if (! $this->is_composed || $this->production_mode === 'batch') {
             return (float) $this->productBatches()
                 ->where('status', 'available')
+                ->where(function ($query) {
+                    $query->whereNull('expiration_date')
+                        ->orWhereDate('expiration_date', '>=', today());
+                })
                 ->sum('available_quantity');
         }
 
@@ -62,6 +68,10 @@ class ProductResource extends JsonResource
             $availableQuantity = (float) StockBatch::query()
                 ->where('material_id', $composition->material_id)
                 ->where('status', 'available')
+                ->where(function ($query) {
+                    $query->whereNull('expiration_date')
+                        ->orWhereDate('expiration_date', '>=', today());
+                })
                 ->sum('available_quantity');
 
             return floor($availableQuantity / $requiredQuantity);

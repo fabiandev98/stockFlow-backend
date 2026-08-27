@@ -17,6 +17,7 @@ class ProductBatch extends Model
     protected $fillable = [
         'product_id',
         'purchase_item_id',
+        'product_production_id',
         'initial_quantity',
         'available_quantity',
         'unit_cost',
@@ -47,6 +48,12 @@ class ProductBatch extends Model
     public function purchaseItem(): BelongsTo
     {
         return $this->belongsTo(PurchaseItem::class);
+    }
+
+    /** @return BelongsTo<ProductProduction, $this> */
+    public function production(): BelongsTo
+    {
+        return $this->belongsTo(ProductProduction::class, 'product_production_id');
     }
 
     /**

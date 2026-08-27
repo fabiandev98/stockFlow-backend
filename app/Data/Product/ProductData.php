@@ -16,5 +16,7 @@ class ProductData extends Data
         public readonly bool $is_composed,
         public readonly bool $is_active,
         public readonly array $compositions,
+        public readonly string $production_mode = 'on_sale',
+        public readonly ?int $shelf_life_days = null,
     ) {}
 }
