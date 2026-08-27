@@ -7,14 +7,15 @@ use App\Models\MaterialCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateMaterialCategoryRequest extends FormRequest
+class MaterialCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
         $materialCategory = $this->materialCategoryFromRoute();
 
         return $materialCategory !== null
-            && ($this->user()?->can('update', $materialCategory) ?? false);
+            ? ($this->user()?->can('update', $materialCategory) ?? false)
+            : ($this->user()?->can('create', MaterialCategory::class) ?? false);
     }
 
     /**
@@ -22,15 +23,13 @@ class UpdateMaterialCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        $materialCategoryId = $this->materialCategoryFromRoute()?->getKey();
-
         return [
             'name' => [
                 'required',
                 'string',
                 'min:2',
                 'max:120',
-                Rule::unique('material_categories', 'name')->ignore($materialCategoryId),
+                Rule::unique('material_categories', 'name')->ignore($this->materialCategoryFromRoute()),
             ],
         ];
     }

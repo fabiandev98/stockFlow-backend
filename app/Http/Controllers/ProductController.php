@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Product\StoreProductRequest;
-use App\Http\Requests\Product\UpdateProductRequest;
+use App\Http\Requests\Product\ProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Services\ProductService;
@@ -27,7 +26,7 @@ class ProductController extends Controller
         );
     }
 
-    public function store(StoreProductRequest $request): ProductResource
+    public function store(ProductRequest $request): ProductResource
     {
         $product = $this->productService->create($request->toDto());
 
@@ -41,7 +40,7 @@ class ProductController extends Controller
         return new ProductResource($product->load(['category', 'compositions.material.category', 'productBatches']));
     }
 
-    public function update(UpdateProductRequest $request, Product $product): ProductResource
+    public function update(ProductRequest $request, Product $product): ProductResource
     {
         $updatedProduct = $this->productService->update($product, $request->toDto());
 

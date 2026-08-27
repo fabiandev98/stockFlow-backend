@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\MaterialCategory\StoreMaterialCategoryRequest;
-use App\Http\Requests\MaterialCategory\UpdateMaterialCategoryRequest;
+use App\Http\Requests\MaterialCategory\MaterialCategoryRequest;
 use App\Http\Resources\MaterialCategoryResource;
 use App\Models\MaterialCategory;
 use App\Services\MaterialCategoryService;
@@ -27,7 +26,7 @@ class MaterialCategoryController extends Controller
         );
     }
 
-    public function store(StoreMaterialCategoryRequest $request): MaterialCategoryResource
+    public function store(MaterialCategoryRequest $request): MaterialCategoryResource
     {
         $materialCategory = $this->materialCategoryService->create($request->toDto());
 
@@ -42,7 +41,7 @@ class MaterialCategoryController extends Controller
     }
 
     public function update(
-        UpdateMaterialCategoryRequest $request,
+        MaterialCategoryRequest $request,
         MaterialCategory $materialCategory,
     ): MaterialCategoryResource {
         $updatedMaterialCategory = $this->materialCategoryService->update(

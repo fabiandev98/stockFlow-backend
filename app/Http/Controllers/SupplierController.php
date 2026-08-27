@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Supplier\StoreSupplierRequest;
-use App\Http\Requests\Supplier\UpdateSupplierRequest;
+use App\Http\Requests\Supplier\SupplierRequest;
 use App\Http\Resources\SupplierResource;
 use App\Models\Supplier;
 use App\Services\SupplierService;
@@ -27,7 +26,7 @@ class SupplierController extends Controller
         );
     }
 
-    public function store(StoreSupplierRequest $request): SupplierResource
+    public function store(SupplierRequest $request): SupplierResource
     {
         $supplier = $this->supplierService->create($request->toDto());
 
@@ -41,7 +40,7 @@ class SupplierController extends Controller
         return new SupplierResource($supplier->loadCount('purchases'));
     }
 
-    public function update(UpdateSupplierRequest $request, Supplier $supplier): SupplierResource
+    public function update(SupplierRequest $request, Supplier $supplier): SupplierResource
     {
         $updatedSupplier = $this->supplierService->update($supplier, $request->toDto());
 

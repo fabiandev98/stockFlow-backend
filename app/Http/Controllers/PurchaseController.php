@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Purchase\StorePurchaseRequest;
-use App\Http\Requests\Purchase\UpdatePurchaseRequest;
+use App\Http\Requests\Purchase\PurchaseRequest;
 use App\Http\Resources\PurchaseResource;
 use App\Models\Purchase;
 use App\Services\PurchaseService;
@@ -27,7 +26,7 @@ class PurchaseController extends Controller
         );
     }
 
-    public function store(StorePurchaseRequest $request): PurchaseResource
+    public function store(PurchaseRequest $request): PurchaseResource
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
@@ -53,7 +52,7 @@ class PurchaseController extends Controller
         );
     }
 
-    public function update(UpdatePurchaseRequest $request, Purchase $purchase): PurchaseResource
+    public function update(PurchaseRequest $request, Purchase $purchase): PurchaseResource
     {
         $updatedPurchase = $this->purchaseService->update($purchase, $request->toDto());
 

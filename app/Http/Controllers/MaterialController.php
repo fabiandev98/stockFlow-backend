@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Material\StoreMaterialRequest;
-use App\Http\Requests\Material\UpdateMaterialRequest;
+use App\Http\Requests\Material\MaterialRequest;
 use App\Http\Resources\MaterialResource;
 use App\Models\Material;
 use App\Services\MaterialService;
@@ -27,7 +26,7 @@ class MaterialController extends Controller
         );
     }
 
-    public function store(StoreMaterialRequest $request): MaterialResource
+    public function store(MaterialRequest $request): MaterialResource
     {
         $material = $this->materialService->create($request->toDto());
 
@@ -41,7 +40,7 @@ class MaterialController extends Controller
         return new MaterialResource($material->load('category'));
     }
 
-    public function update(UpdateMaterialRequest $request, Material $material): MaterialResource
+    public function update(MaterialRequest $request, Material $material): MaterialResource
     {
         $updatedMaterial = $this->materialService->update($material, $request->toDto());
 

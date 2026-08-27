@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Product\StoreProductCategoryRequest;
-use App\Http\Requests\Product\UpdateProductCategoryRequest;
+use App\Http\Requests\Product\ProductCategoryRequest;
 use App\Http\Resources\ProductCategoryResource;
 use App\Models\ProductCategory;
 use App\Services\ProductCategoryService;
@@ -27,7 +26,7 @@ class ProductCategoryController extends Controller
         );
     }
 
-    public function store(StoreProductCategoryRequest $request): ProductCategoryResource
+    public function store(ProductCategoryRequest $request): ProductCategoryResource
     {
         $productCategory = $this->productCategoryService->create($request->toDto());
 
@@ -42,7 +41,7 @@ class ProductCategoryController extends Controller
     }
 
     public function update(
-        UpdateProductCategoryRequest $request,
+        ProductCategoryRequest $request,
         ProductCategory $productCategory,
     ): ProductCategoryResource {
         $updatedProductCategory = $this->productCategoryService->update(

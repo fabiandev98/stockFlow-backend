@@ -5,12 +5,17 @@ namespace App\Http\Requests\Material;
 use App\Data\Material\MaterialData;
 use App\Models\Material;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class StoreMaterialRequest extends FormRequest
+class MaterialRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', Material::class) ?? false;
+        $material = $this->materialFromRoute();
+
+        return $material !== null
+            ? ($this->user()?->can('update', $material) ?? false)
+            : ($this->user()?->can('create', Material::class) ?? false);
     }
 
     /**
@@ -20,7 +25,13 @@ class StoreMaterialRequest extends FormRequest
     {
         return [
             'material_category_id' => 'nullable|exists:material_categories,id',
-            'name' => 'required|string|min:2|max:120|unique:materials,name',
+            'name' => [
+                'required',
+                'string',
+                'min:2',
+                'max:120',
+                Rule::unique('materials', 'name')->ignore($this->materialFromRoute()),
+            ],
             'unit' => 'required|string|max:50',
             'minimum_stock' => 'required|numeric|min:0',
             'is_perishable' => 'sometimes|boolean',
@@ -34,5 +45,12 @@ class StoreMaterialRequest extends FormRequest
             ...$this->validated(),
             'is_perishable' => $this->boolean('is_perishable', false),
         ]);
+    }
+
+    private function materialFromRoute(): ?Material
+    {
+        $material = $this->route('material');
+
+        return $material instanceof Material ? $material : null;
     }
 }

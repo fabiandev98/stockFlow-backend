@@ -6,14 +6,15 @@ use App\Data\Purchase\PurchaseData;
 use App\Models\Purchase;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdatePurchaseRequest extends FormRequest
+class PurchaseRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $purchase = $this->route('purchase');
+        $purchase = $this->purchaseFromRoute();
 
-        return $purchase instanceof Purchase
-            && ($this->user()?->can('update', $purchase) ?? false);
+        return $purchase !== null
+            ? ($this->user()?->can('update', $purchase) ?? false)
+            : ($this->user()?->can('create', Purchase::class) ?? false);
     }
 
     /**
@@ -37,5 +38,12 @@ class UpdatePurchaseRequest extends FormRequest
     public function toDto(): PurchaseData
     {
         return PurchaseData::from($this->validated());
+    }
+
+    private function purchaseFromRoute(): ?Purchase
+    {
+        $purchase = $this->route('purchase');
+
+        return $purchase instanceof Purchase ? $purchase : null;
     }
 }
