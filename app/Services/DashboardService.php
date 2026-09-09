@@ -8,6 +8,7 @@ use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SaleReturn;
 use App\Models\StockBatch;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ class DashboardService
                 'expiration_window_days' => max(1, $expirationWindowDays),
             ],
             'sales' => [
-                'total' => number_format((float) (clone $salesQuery)->sum('total_amount'), 2, '.', ''),
+                'total' => number_format((float) (clone $salesQuery)->sum('total_amount') - $this->returnsTotal($start, $end), 2, '.', ''),
                 'count' => (clone $salesQuery)->count(),
                 'items_sold' => (float) SaleItem::query()
                     ->whereHas('sale', fn ($query) => $query->completed()->whereBetween('sale_date', [$start, $end]))
@@ -93,9 +94,9 @@ class DashboardService
         $sales = Sale::query()
             ->completed()
             ->whereBetween('sale_date', [$start, $end]);
-        $grossSales = (float) (clone $sales)->sum('subtotal_amount');
-        $discounts = (float) (clone $sales)->sum('discount_amount');
-        $taxes = (float) (clone $sales)->sum('tax_amount');
+        $grossSales = (float) (clone $sales)->sum('subtotal_amount') - $this->returnedAmount('subtotal_amount', $start, $end);
+        $discounts = (float) (clone $sales)->sum('discount_amount') - $this->returnedAmount('discount_amount', $start, $end);
+        $taxes = (float) (clone $sales)->sum('tax_amount') - $this->returnedAmount('tax_amount', $start, $end);
         $netSales = round($grossSales - $discounts, 2);
         $materialCogs = (float) DB::table('stock_movements')
             ->join('stock_batches', 'stock_batches.id', '=', 'stock_movements.stock_batch_id')
@@ -115,7 +116,23 @@ class DashboardService
             ->whereBetween('sales.sale_date', [$start, $end])
             ->selectRaw('COALESCE(SUM(product_stock_movements.quantity * product_batches.unit_cost), 0) as total')
             ->value('total');
-        $cogs = round($materialCogs + $productCogs, 2);
+        $returnedMaterialCogs = (float) DB::table('sale_return_allocations')
+            ->join('sale_return_items', 'sale_return_items.id', '=', 'sale_return_allocations.sale_return_item_id')
+            ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
+            ->join('sales', 'sales.id', '=', 'sale_returns.sale_id')
+            ->join('stock_movements', 'stock_movements.id', '=', 'sale_return_allocations.stock_movement_id')
+            ->join('stock_batches', 'stock_batches.id', '=', 'stock_movements.stock_batch_id')
+            ->whereBetween('sales.sale_date', [$start, $end])
+            ->selectRaw('COALESCE(SUM(sale_return_allocations.quantity * stock_batches.unit_cost), 0) as total')->value('total');
+        $returnedProductCogs = (float) DB::table('sale_return_allocations')
+            ->join('sale_return_items', 'sale_return_items.id', '=', 'sale_return_allocations.sale_return_item_id')
+            ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
+            ->join('sales', 'sales.id', '=', 'sale_returns.sale_id')
+            ->join('product_stock_movements', 'product_stock_movements.id', '=', 'sale_return_allocations.product_stock_movement_id')
+            ->join('product_batches', 'product_batches.id', '=', 'product_stock_movements.product_batch_id')
+            ->whereBetween('sales.sale_date', [$start, $end])
+            ->selectRaw('COALESCE(SUM(sale_return_allocations.quantity * product_batches.unit_cost), 0) as total')->value('total');
+        $cogs = round($materialCogs + $productCogs - $returnedMaterialCogs - $returnedProductCogs, 2);
         $grossProfit = round($netSales - $cogs, 2);
         $wasteCost = (float) DB::table('stock_movements')
             ->join('stock_batches', 'stock_batches.id', '=', 'stock_movements.stock_batch_id')
@@ -123,6 +140,13 @@ class DashboardService
             ->whereBetween('stock_movements.movement_date', [$start, $end])
             ->selectRaw('COALESCE(SUM(stock_movements.quantity * stock_batches.unit_cost), 0) as total')
             ->value('total');
+        $productWasteCost = (float) DB::table('product_stock_movements')
+            ->join('product_batches', 'product_batches.id', '=', 'product_stock_movements.product_batch_id')
+            ->whereIn('product_stock_movements.type', ['waste', 'expired'])
+            ->whereBetween('product_stock_movements.movement_date', [$start, $end])
+            ->selectRaw('COALESCE(SUM(product_stock_movements.quantity * product_batches.unit_cost), 0) as total')
+            ->value('total');
+        $wasteCost = round($wasteCost + $productWasteCost, 2);
         $actualFoodCost = round($cogs + $wasteCost, 2);
         $adjustedGrossProfit = round($netSales - $actualFoodCost, 2);
 
@@ -140,6 +164,20 @@ class DashboardService
             'actual_food_cost_percentage' => number_format($netSales > 0 ? $actualFoodCost / $netSales * 100 : 0, 2, '.', ''),
             'adjusted_gross_profit' => number_format($adjustedGrossProfit, 2, '.', ''),
         ];
+    }
+
+    private function returnsTotal(Carbon $start, Carbon $end): float
+    {
+        return $this->returnedAmount('total_amount', $start, $end);
+    }
+
+    private function returnedAmount(string $column, Carbon $start, Carbon $end): float
+    {
+        return (float) SaleReturn::query()
+            ->join('sales', 'sales.id', '=', 'sale_returns.sale_id')
+            ->where('sales.status', 'completed')
+            ->whereBetween('sales.sale_date', [$start, $end])
+            ->sum("sale_returns.$column");
     }
 
     private function expiredBatchesCount(Carbon $today): int
