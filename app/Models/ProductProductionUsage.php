@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductProductionUsage extends Model
 {
-    protected $fillable = ['product_production_id', 'material_id', 'stock_batch_id', 'quantity', 'unit_cost'];
+    protected $fillable = ['product_production_id', 'material_id', 'stock_batch_id', 'source_product_id', 'product_batch_id', 'quantity', 'unit_cost'];
 
     protected $casts = ['quantity' => 'decimal:2', 'unit_cost' => 'decimal:4'];
 
@@ -24,5 +24,15 @@ class ProductProductionUsage extends Model
     public function stockBatch(): BelongsTo
     {
         return $this->belongsTo(StockBatch::class);
+    }
+
+    public function sourceProduct(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'source_product_id');
+    }
+
+    public function productBatch(): BelongsTo
+    {
+        return $this->belongsTo(ProductBatch::class);
     }
 }

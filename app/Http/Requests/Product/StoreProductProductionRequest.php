@@ -11,6 +11,9 @@ class StoreProductProductionRequest extends FormRequest
         return $this->user()?->can('update', $this->route('product')) ?? false;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [
@@ -21,7 +24,8 @@ class StoreProductProductionRequest extends FormRequest
             'expiration_override_reason' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:2000',
             'usages' => 'required|array|min:1',
-            'usages.*.stock_batch_id' => 'required|exists:stock_batches,id',
+            'usages.*.stock_batch_id' => 'nullable|required_without:usages.*.product_batch_id|distinct|exists:stock_batches,id',
+            'usages.*.product_batch_id' => 'nullable|required_without:usages.*.stock_batch_id|distinct|exists:product_batches,id',
             'usages.*.quantity' => 'required|numeric|min:0.01',
         ];
     }
