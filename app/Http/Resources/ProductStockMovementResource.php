@@ -27,6 +27,10 @@ class ProductStockMovementResource extends JsonResource
             'user' => new UserResource($this->whenLoaded('user')),
             'type' => $this->type,
             'quantity' => $this->quantity,
+            'total_cost' => $this->when(
+                $this->relationLoaded('productBatch'),
+                fn () => number_format((float) $this->quantity * (float) $this->productBatch->unit_cost, 2, '.', '')
+            ),
             'reason' => $this->reason,
             'movement_date' => $this->movement_date,
             'created_at' => $this->created_at,
