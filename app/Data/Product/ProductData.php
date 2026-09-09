@@ -18,5 +18,6 @@ class ProductData extends Data
         public readonly array $compositions,
         public readonly string $production_mode = 'on_sale',
         public readonly ?int $shelf_life_days = null,
+        public readonly bool $is_internal_preparation = false,
     ) {}
 }

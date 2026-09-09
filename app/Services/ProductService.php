@@ -29,6 +29,7 @@ class ProductService
             ->allowedFilters([
                 AllowedFilter::exact('is_active'),
                 AllowedFilter::exact('is_composed'),
+                AllowedFilter::exact('is_internal_preparation'),
                 AllowedFilter::exact('product_category_id'),
                 AllowedFilter::callback('global', function (Builder $query, $value) {
                     $query
@@ -48,6 +49,7 @@ class ProductService
                 'name' => $data->name,
                 'sale_price' => $data->sale_price,
                 'is_composed' => $data->is_composed,
+                'is_internal_preparation' => $data->is_composed && $data->production_mode === 'batch' && $data->is_internal_preparation,
                 'production_mode' => $data->is_composed ? $data->production_mode : 'on_sale',
                 'shelf_life_days' => $data->is_composed && $data->production_mode === 'batch' ? $data->shelf_life_days : null,
                 'is_active' => $data->is_active,
@@ -67,6 +69,7 @@ class ProductService
                 'name' => $data->name,
                 'sale_price' => $data->sale_price,
                 'is_composed' => $data->is_composed,
+                'is_internal_preparation' => $data->is_composed && $data->production_mode === 'batch' && $data->is_internal_preparation,
                 'production_mode' => $data->is_composed ? $data->production_mode : 'on_sale',
                 'shelf_life_days' => $data->is_composed && $data->production_mode === 'batch' ? $data->shelf_life_days : null,
                 'is_active' => $data->is_active,

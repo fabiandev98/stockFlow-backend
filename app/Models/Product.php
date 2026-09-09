@@ -19,6 +19,7 @@ class Product extends Model
         'name',
         'sale_price',
         'is_composed',
+        'is_internal_preparation',
         'production_mode',
         'shelf_life_days',
         'is_active',
@@ -27,6 +28,7 @@ class Product extends Model
     protected $casts = [
         'sale_price' => 'decimal:2',
         'is_composed' => 'boolean',
+        'is_internal_preparation' => 'boolean',
         'shelf_life_days' => 'integer',
         'is_active' => 'boolean',
     ];
@@ -45,6 +47,12 @@ class Product extends Model
     public function compositions(): HasMany
     {
         return $this->hasMany(ProductComposition::class);
+    }
+
+    /** @return HasMany<Recipe, $this> */
+    public function recipes(): HasMany
+    {
+        return $this->hasMany(Recipe::class);
     }
 
     /**
