@@ -45,9 +45,10 @@ class SyncPermissions extends Command
         foreach ($permissionsCases as $permissionCase) {
             $permissionValue = $permissionCase->value;
 
-            $permission = Permission::firstOrCreate(
-                ['name' => $permissionValue],
-            );
+            $permission = Permission::firstOrCreate([
+                'name' => $permissionValue,
+                'guard_name' => 'sanctum',
+            ]);
 
             if ($permission->wasRecentlyCreated) {
                 $createdCount++;
@@ -59,7 +60,9 @@ class SyncPermissions extends Command
         }
 
         // Delete permissions that no longer exist in enum
-        $orphanedPermissions = Permission::whereNotIn('name', $enumPermissions)->get();
+        $orphanedPermissions = Permission::where('guard_name', 'sanctum')
+            ->whereNotIn('name', $enumPermissions)
+            ->get();
         foreach ($orphanedPermissions as $permission) {
             $this->line("  ✗ Deleted: {$permission->name}");
             $permission->delete();

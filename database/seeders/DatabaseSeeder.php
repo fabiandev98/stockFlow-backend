@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             StockFlowDemoSeeder::class,
+            HistoricalKpiDemoSeeder::class,
+            RestaurantDemoSeeder::class,
         ]);
     }
 }

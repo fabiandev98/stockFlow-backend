@@ -22,6 +22,9 @@ class Role extends SpatieRole
 
     protected $guarded = [];
 
+    /** @var string */
+    protected $guard_name = 'sanctum';
+
     protected $casts = [
         'hierarchy' => 'integer',
     ];

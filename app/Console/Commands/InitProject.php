@@ -41,8 +41,16 @@ class InitProject extends Command
         // Step 2: Create Super Admin role
         $this->info('Step 2: Creating Super Admin role...');
 
+        $legacyRole = Role::query()
+            ->where('name', 'Super Admin')
+            ->where('guard_name', 'web')
+            ->first();
+        if ($legacyRole && ! Role::query()->where('name', 'Super Admin')->where('guard_name', 'sanctum')->exists()) {
+            $legacyRole->update(['guard_name' => 'sanctum']);
+        }
+
         $superAdminRole = Role::firstOrCreate(
-            ['name' => 'Super Admin'],
+            ['name' => 'Super Admin', 'guard_name' => 'sanctum'],
             [
                 'hierarchy' => Role::SUPERADMIN_HIERARCHY,
                 'display_name' => 'Super Admin',
@@ -59,7 +67,7 @@ class InitProject extends Command
         // Step 3: Assign all permissions to Super Admin
         $this->info('Step 3: Assigning all permissions to Super Admin...');
 
-        $allPermissions = Permission::all();
+        $allPermissions = Permission::query()->where('guard_name', 'sanctum')->get();
         $superAdminRole->syncPermissions($allPermissions);
 
         $this->line("  ✓ Assigned {$allPermissions->count()} permissions to Super Admin");
