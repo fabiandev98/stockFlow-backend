@@ -48,6 +48,27 @@ class PurchaseService
             ]);
     }
 
+    /**
+     * @return Builder<Purchase>
+     */
+    public function pendingReviewQuery(): Builder
+    {
+        $pendingItems = fn ($query) => $query
+            ->where('accepted_quantity', '>', 0)
+            ->whereNull('usable_quantity');
+
+        return Purchase::query()
+            ->whereHas('items', $pendingItems)
+            ->with([
+                'supplier',
+                'items' => fn ($query) => $pendingItems($query)
+                    ->with(['material.category', 'product.category']),
+            ])
+            ->withCount('items')
+            ->withCount(['items as pending_review_items_count' => $pendingItems])
+            ->latest('purchase_date');
+    }
+
     public function create(PurchaseData $data, User $user): Purchase
     {
         return DB::transaction(function () use ($data, $user) {
@@ -99,17 +120,27 @@ class PurchaseService
 
         foreach ($data->items as $item) {
             $quantity = (float) $item['quantity'];
+            $acceptedQuantity = array_key_exists('accepted_quantity', $item)
+                ? (float) $item['accepted_quantity']
+                : $quantity;
+            $rejectedQuantity = array_key_exists('rejected_quantity', $item)
+                ? (float) $item['rejected_quantity']
+                : max(0, $quantity - $acceptedQuantity);
+
+            if ($acceptedQuantity + $rejectedQuantity > $quantity) {
+                throw new HttpException(Response::HTTP_UNPROCESSABLE_ENTITY, 'Accepted and rejected quantities can not exceed delivered quantity');
+            }
             $unitCost = (float) $item['unit_cost'];
             $itemTotal = round($quantity * $unitCost, 2);
 
             if (! empty($item['product_id'])) {
-                $this->createProductItemAndBatch($purchase, $data, $item, $quantity, $unitCost, $itemTotal);
+                $this->createProductItemAndBatch($purchase, $data, $item, $quantity, $acceptedQuantity, $rejectedQuantity, $unitCost, $itemTotal);
                 $totalCost += $itemTotal;
 
                 continue;
             }
 
-            $this->createMaterialItemAndBatch($purchase, $data, $item, $quantity, $unitCost, $itemTotal);
+            $this->createMaterialItemAndBatch($purchase, $data, $item, $quantity, $acceptedQuantity, $rejectedQuantity, $unitCost, $itemTotal);
             $totalCost += $itemTotal;
         }
 
@@ -124,6 +155,8 @@ class PurchaseService
         PurchaseData $data,
         array $item,
         float $quantity,
+        float $acceptedQuantity,
+        float $rejectedQuantity,
         float $unitCost,
         float $itemTotal,
     ): void {
@@ -141,16 +174,23 @@ class PurchaseService
             'material_id' => $material->id,
             'product_id' => null,
             'quantity' => $quantity,
+            'accepted_quantity' => $acceptedQuantity,
+            'rejected_quantity' => $rejectedQuantity,
+            'quality_issue_reason' => $this->nullableString($item['quality_issue_reason'] ?? null),
             'unit_cost' => $unitCost,
             'total_cost' => $itemTotal,
             'expiration_date' => $expirationDate,
         ]);
 
+        if ($acceptedQuantity <= 0) {
+            return;
+        }
+
         StockBatch::create([
             'material_id' => $material->id,
             'purchase_item_id' => $purchaseItem->id,
-            'initial_quantity' => $quantity,
-            'available_quantity' => $quantity,
+            'initial_quantity' => $acceptedQuantity,
+            'available_quantity' => $acceptedQuantity,
             'unit_cost' => $unitCost,
             'received_date' => $data->purchase_date,
             'expiration_date' => $expirationDate,
@@ -166,6 +206,8 @@ class PurchaseService
         PurchaseData $data,
         array $item,
         float $quantity,
+        float $acceptedQuantity,
+        float $rejectedQuantity,
         float $unitCost,
         float $itemTotal,
     ): void {
@@ -183,16 +225,23 @@ class PurchaseService
             'material_id' => null,
             'product_id' => $product->id,
             'quantity' => $quantity,
+            'accepted_quantity' => $acceptedQuantity,
+            'rejected_quantity' => $rejectedQuantity,
+            'quality_issue_reason' => $this->nullableString($item['quality_issue_reason'] ?? null),
             'unit_cost' => $unitCost,
             'total_cost' => $itemTotal,
             'expiration_date' => $expirationDate,
         ]);
 
+        if ($acceptedQuantity <= 0) {
+            return;
+        }
+
         ProductBatch::create([
             'product_id' => $product->id,
             'purchase_item_id' => $purchaseItem->id,
-            'initial_quantity' => $quantity,
-            'available_quantity' => $quantity,
+            'initial_quantity' => $acceptedQuantity,
+            'available_quantity' => $acceptedQuantity,
             'unit_cost' => $unitCost,
             'received_date' => $data->purchase_date,
             'expiration_date' => $expirationDate,
@@ -322,6 +371,7 @@ class PurchaseService
             'items.product.category',
             'items.stockBatches',
             'items.productBatches',
+            'items.yieldReviewer',
         ]) ?? $purchase;
     }
 }

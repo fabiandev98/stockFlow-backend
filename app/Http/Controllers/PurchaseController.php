@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Purchase\PurchaseRequest;
+use App\Http\Requests\Purchase\StorePurchaseItemYieldRequest;
+use App\Http\Resources\PurchaseItemResource;
 use App\Http\Resources\PurchaseResource;
 use App\Models\Purchase;
+use App\Models\PurchaseItem;
 use App\Services\PurchaseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +26,15 @@ class PurchaseController extends Controller
 
         return PurchaseResource::collection(
             $this->purchaseService->indexQueryBuilder()->paginate(25)
+        );
+    }
+
+    public function pendingReviews(): AnonymousResourceCollection
+    {
+        $this->authorize('viewAny', Purchase::class);
+
+        return PurchaseResource::collection(
+            $this->purchaseService->pendingReviewQuery()->paginate(25)
         );
     }
 
@@ -48,8 +60,26 @@ class PurchaseController extends Controller
                 'items.product.category',
                 'items.stockBatches',
                 'items.productBatches',
+                'items.yieldReviewer',
             ])->loadCount('items')
         );
+    }
+
+    public function storeItemYield(StorePurchaseItemYieldRequest $request, Purchase $purchase, PurchaseItem $purchaseItem): PurchaseItemResource
+    {
+        $purchaseItem->update([
+            ...$request->validated(),
+            'yield_recorded_at' => now(),
+            'yield_reviewer_id' => $request->user()?->id,
+        ]);
+
+        return new PurchaseItemResource($purchaseItem->fresh([
+            'material.category',
+            'product.category',
+            'yieldReviewer',
+            'stockBatches',
+            'productBatches',
+        ]));
     }
 
     public function update(PurchaseRequest $request, Purchase $purchase): PurchaseResource

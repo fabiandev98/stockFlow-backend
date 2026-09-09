@@ -27,4 +27,10 @@ class Supplier extends Model
     {
         return $this->hasMany(Purchase::class);
     }
+
+    /** @return HasMany<SupplierFeedbackNote, $this> */
+    public function feedbackNotes(): HasMany
+    {
+        return $this->hasMany(SupplierFeedbackNote::class)->latest();
+    }
 }

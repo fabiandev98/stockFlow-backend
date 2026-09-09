@@ -26,6 +26,7 @@ class PurchaseResource extends JsonResource
             'total_cost' => $this->total_cost,
             'notes' => $this->notes,
             'items_count' => $this->whenCounted('items'),
+            'pending_review_items_count' => $this->whenCounted('pending_review_items'),
             'items' => PurchaseItemResource::collection($this->whenLoaded('items')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

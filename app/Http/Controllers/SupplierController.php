@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Supplier\StoreSupplierNoteRequest;
 use App\Http\Requests\Supplier\SupplierRequest;
+use App\Http\Resources\SupplierFeedbackNoteResource;
 use App\Http\Resources\SupplierResource;
 use App\Models\Supplier;
+use App\Models\SupplierFeedbackNote;
 use App\Services\SupplierService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,6 +41,41 @@ class SupplierController extends Controller
         $this->authorize('view', $supplier);
 
         return new SupplierResource($supplier->loadCount('purchases'));
+    }
+
+    public function quality(Supplier $supplier): JsonResponse
+    {
+        $this->authorize('view', $supplier);
+
+        return response()->json($this->supplierService->qualityMetrics($supplier));
+    }
+
+    public function notes(Supplier $supplier): AnonymousResourceCollection
+    {
+        $this->authorize('view', $supplier);
+
+        return SupplierFeedbackNoteResource::collection($supplier->feedbackNotes()->with('user')->get());
+    }
+
+    public function storeNote(StoreSupplierNoteRequest $request, Supplier $supplier): SupplierFeedbackNoteResource
+    {
+        $note = $supplier->feedbackNotes()->create([
+            ...$request->validated(),
+            'user_id' => $request->user()?->id,
+        ]);
+
+        return new SupplierFeedbackNoteResource($note->load('user'));
+    }
+
+    public function destroyNote(Supplier $supplier, SupplierFeedbackNote $supplierFeedbackNote): JsonResponse
+    {
+        $this->authorize('update', $supplier);
+
+        abort_unless($supplierFeedbackNote->supplier_id === $supplier->id, HttpStatus::HTTP_NOT_FOUND);
+
+        $supplierFeedbackNote->delete();
+
+        return response()->json(null, HttpStatus::HTTP_NO_CONTENT);
     }
 
     public function update(SupplierRequest $request, Supplier $supplier): SupplierResource

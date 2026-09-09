@@ -30,6 +30,9 @@ class PurchaseRequest extends FormRequest
             'items.*.material_id' => 'nullable|required_without:items.*.product_id|exists:materials,id',
             'items.*.product_id' => 'nullable|required_without:items.*.material_id|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.accepted_quantity' => 'nullable|numeric|min:0',
+            'items.*.rejected_quantity' => 'nullable|numeric|min:0',
+            'items.*.quality_issue_reason' => 'nullable|string|max:1000',
             'items.*.unit_cost' => 'required|numeric|min:0',
             'items.*.expiration_date' => 'nullable|date',
         ];
