@@ -50,6 +50,12 @@ class Sale extends Model
         return $this->hasMany(SaleItem::class);
     }
 
+    /** @return HasMany<SaleReturn, $this> */
+    public function returns(): HasMany
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
+
     /**
      * @param  Builder<Sale>  $query
      * @return Builder<Sale>

@@ -11,8 +11,8 @@ use App\Models\SaleItem;
 use App\Models\StockBatch;
 use App\Models\StockMovement;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -235,15 +235,6 @@ class SaleService
         User $user,
         string $saleDate,
     ): void {
-        $availableQuantity = $this->availableProductQuantity($product->id, $saleDate);
-
-        if ($soldQuantity > $availableQuantity) {
-            throw new HttpException(
-                Response::HTTP_UNPROCESSABLE_ENTITY,
-                "Insufficient stock for {$product->name}"
-            );
-        }
-
         $remainingQuantity = (float) $soldQuantity;
 
         $batches = ProductBatch::query()
@@ -260,6 +251,15 @@ class SaleService
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
+
+        $availableQuantity = (float) $batches->sum('available_quantity');
+
+        if ($soldQuantity > $availableQuantity) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                "Insufficient stock for {$product->name}"
+            );
+        }
 
         foreach ($batches as $batch) {
             if ($remainingQuantity <= 0) {
@@ -288,18 +288,13 @@ class SaleService
 
             $remainingQuantity = round($remainingQuantity - $quantityToConsume, 2);
         }
-    }
 
-    private function availableProductQuantity(int $productId, string $saleDate): float
-    {
-        return (float) ProductBatch::query()
-            ->where('product_id', $productId)
-            ->where('status', 'available')
-            ->where(function (Builder $query) use ($saleDate) {
-                $query->whereNull('expiration_date')
-                    ->orWhereDate('expiration_date', '>=', $saleDate);
-            })
-            ->sum('available_quantity');
+        if ($remainingQuantity > 0) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                "Insufficient stock for {$product->name}"
+            );
+        }
     }
 
     private function consumeProductMaterials(
@@ -309,47 +304,25 @@ class SaleService
         User $user,
         string $saleDate,
     ): void {
-        foreach ($product->compositions as $composition) {
+        foreach ($product->compositions->sortBy('material_id') as $composition) {
             $requiredQuantity = (float) $composition->quantity_required * $soldQuantity;
-            $availableQuantity = $this->availableMaterialQuantity((int) $composition->material_id, $saleDate);
-
-            if ($requiredQuantity > $availableQuantity) {
-                $materialName = $composition->material
-                    ? $composition->material->name
-                    : "material ID {$composition->material_id}";
-
-                throw new HttpException(
-                    Response::HTTP_UNPROCESSABLE_ENTITY,
-                    "Insufficient stock for {$materialName}"
-                );
-            }
 
             $this->consumeMaterialBatches(
                 $saleItem,
                 (int) $composition->material_id,
                 $requiredQuantity,
+                $composition->material->name ?? "material ID {$composition->material_id}",
                 $user,
                 $saleDate,
             );
         }
     }
 
-    private function availableMaterialQuantity(int $materialId, string $saleDate): float
-    {
-        return (float) StockBatch::query()
-            ->where('material_id', $materialId)
-            ->where('status', 'available')
-            ->where(function (Builder $query) use ($saleDate) {
-                $query->whereNull('expiration_date')
-                    ->orWhereDate('expiration_date', '>=', $saleDate);
-            })
-            ->sum('available_quantity');
-    }
-
     private function consumeMaterialBatches(
         SaleItem $saleItem,
         int $materialId,
         float $requiredQuantity,
+        string $materialName,
         User $user,
         string $saleDate,
     ): void {
@@ -369,6 +342,15 @@ class SaleService
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
+
+        $availableQuantity = (float) $batches->sum('available_quantity');
+
+        if ($requiredQuantity > $availableQuantity) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                "Insufficient stock for {$materialName}"
+            );
+        }
 
         foreach ($batches as $batch) {
             if ($remainingQuantity <= 0) {
@@ -396,6 +378,13 @@ class SaleService
             ]);
 
             $remainingQuantity = round($remainingQuantity - $quantityToConsume, 2);
+        }
+
+        if ($remainingQuantity > 0) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                "Insufficient stock for {$materialName}"
+            );
         }
     }
 

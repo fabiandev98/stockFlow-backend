@@ -58,4 +58,10 @@ class SaleItem extends Model
     {
         return $this->hasMany(ProductStockMovement::class);
     }
+
+    /** @return HasMany<SaleReturnItem, $this> */
+    public function returnItems(): HasMany
+    {
+        return $this->hasMany(SaleReturnItem::class);
+    }
 }

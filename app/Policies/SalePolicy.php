@@ -27,4 +27,9 @@ class SalePolicy
     {
         return $user->hasPermissionTo(DenebPermission::SALES_CANCEL);
     }
+
+    public function returnSale(User $user, Sale $sale): bool
+    {
+        return $user->hasPermissionTo(DenebPermission::SALES_RETURN);
+    }
 }

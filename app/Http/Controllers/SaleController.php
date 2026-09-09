@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Sale\CancelSaleRequest;
 use App\Http\Requests\Sale\StoreSaleRequest;
+use App\Http\Requests\Sale\StoreSaleReturnRequest;
 use App\Http\Resources\SaleResource;
 use App\Models\Sale;
+use App\Services\SaleReturnService;
 use App\Services\SaleService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -13,6 +16,7 @@ class SaleController extends Controller
 {
     public function __construct(
         protected SaleService $saleService,
+        protected SaleReturnService $saleReturnService,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -60,5 +64,14 @@ class SaleController extends Controller
             $this->saleService->cancel($sale, $request->string('reason')->toString(), $user)
         );
     }
+
+    public function storeReturn(StoreSaleReturnRequest $request, Sale $sale): \Illuminate\Http\Resources\Json\JsonResource
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        return new \Illuminate\Http\Resources\Json\JsonResource(
+            $this->saleReturnService->create($sale, $request->validated(), $user)
+        );
+    }
 }
-use App\Http\Requests\Sale\CancelSaleRequest;
