@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Material;
 use App\Models\Product;
+use App\Models\ProductBatch;
 use App\Models\StockBatch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -20,8 +21,8 @@ class InventoryService
         return QueryBuilder::for(
             Material::query()
                 ->with('category')
-                ->withSum('stockBatches as available_stock', 'available_quantity')
-                ->withMin('stockBatches as next_expiration_date', 'expiration_date')
+                ->withSum(['stockBatches as available_stock' => fn (Builder $query) => $this->availableBatchConstraint($query)], 'available_quantity')
+                ->withMin(['stockBatches as next_expiration_date' => fn (Builder $query) => $this->availableBatchConstraint($query)], 'expiration_date')
                 ->orderBy('name')
         )
             ->allowedFilters([
@@ -34,7 +35,8 @@ class InventoryService
                     }
 
                     $query->whereRaw(
-                        'COALESCE((SELECT SUM(stock_batches.available_quantity) FROM stock_batches WHERE stock_batches.material_id = materials.id), 0) <= materials.minimum_stock'
+                        'COALESCE((SELECT SUM(stock_batches.available_quantity) FROM stock_batches WHERE stock_batches.material_id = materials.id AND stock_batches.status = ? AND (stock_batches.expiration_date IS NULL OR stock_batches.expiration_date >= ?)), 0) <= materials.minimum_stock',
+                        ['available', today()->toDateString()]
                     );
                 }),
                 AllowedFilter::callback('global', function (Builder $query, $value) {
@@ -64,8 +66,8 @@ class InventoryService
             Product::query()
                 ->where('is_composed', false)
                 ->with('category')
-                ->withSum('productBatches as available_stock', 'available_quantity')
-                ->withMin('productBatches as next_expiration_date', 'expiration_date')
+                ->withSum(['productBatches as available_stock' => fn (Builder $query) => $this->availableBatchConstraint($query)], 'available_quantity')
+                ->withMin(['productBatches as next_expiration_date' => fn (Builder $query) => $this->availableBatchConstraint($query)], 'expiration_date')
                 ->orderBy('name')
         )
             ->allowedFilters([
@@ -91,7 +93,9 @@ class InventoryService
      * @return array{
      *     low_stock_materials: \Illuminate\Database\Eloquent\Collection<int, Material>,
      *     expired_batches: \Illuminate\Database\Eloquent\Collection<int, StockBatch>,
-     *     expiring_batches: \Illuminate\Database\Eloquent\Collection<int, StockBatch>
+     *     expired_product_batches: \Illuminate\Database\Eloquent\Collection<int, ProductBatch>,
+     *     expiring_batches: \Illuminate\Database\Eloquent\Collection<int, StockBatch>,
+     *     expiring_product_batches: \Illuminate\Database\Eloquent\Collection<int, ProductBatch>
      * }
      */
     public function alerts(int $expirationWindowDays = 7): array
@@ -102,16 +106,25 @@ class InventoryService
         return [
             'low_stock_materials' => Material::query()
                 ->with('category')
-                ->withSum('stockBatches as available_stock', 'available_quantity')
-                ->withMin('stockBatches as next_expiration_date', 'expiration_date')
+                ->withSum(['stockBatches as available_stock' => fn (Builder $query) => $this->availableBatchConstraint($query)], 'available_quantity')
+                ->withMin(['stockBatches as next_expiration_date' => fn (Builder $query) => $this->availableBatchConstraint($query)], 'expiration_date')
                 ->whereRaw(
-                    'COALESCE((SELECT SUM(stock_batches.available_quantity) FROM stock_batches WHERE stock_batches.material_id = materials.id), 0) <= materials.minimum_stock'
+                    'COALESCE((SELECT SUM(stock_batches.available_quantity) FROM stock_batches WHERE stock_batches.material_id = materials.id AND stock_batches.status = ? AND (stock_batches.expiration_date IS NULL OR stock_batches.expiration_date >= ?)), 0) <= materials.minimum_stock',
+                    ['available', today()->toDateString()]
                 )
                 ->orderBy('name')
                 ->limit(25)
                 ->get(),
             'expired_batches' => StockBatch::query()
                 ->with(['material.category', 'purchaseItem.purchase.supplier'])
+                ->where('available_quantity', '>', 0)
+                ->whereNotNull('expiration_date')
+                ->whereDate('expiration_date', '<', $today)
+                ->orderBy('expiration_date')
+                ->limit(25)
+                ->get(),
+            'expired_product_batches' => ProductBatch::query()
+                ->with(['product.category', 'purchaseItem.purchase.supplier'])
                 ->where('available_quantity', '>', 0)
                 ->whereNotNull('expiration_date')
                 ->whereDate('expiration_date', '<', $today)
@@ -127,6 +140,26 @@ class InventoryService
                 ->orderBy('expiration_date')
                 ->limit(25)
                 ->get(),
+            'expiring_product_batches' => ProductBatch::query()
+                ->with(['product.category', 'purchaseItem.purchase.supplier'])
+                ->where('available_quantity', '>', 0)
+                ->whereNotNull('expiration_date')
+                ->whereDate('expiration_date', '>=', $today)
+                ->whereDate('expiration_date', '<=', $expirationLimit)
+                ->orderBy('expiration_date')
+                ->limit(25)
+                ->get(),
         ];
+    }
+
+    private function availableBatchConstraint(Builder $query): void
+    {
+        $query
+            ->where('status', 'available')
+            ->where('available_quantity', '>', 0)
+            ->where(function (Builder $query) {
+                $query->whereNull('expiration_date')
+                    ->orWhereDate('expiration_date', '>=', today());
+            });
     }
 }

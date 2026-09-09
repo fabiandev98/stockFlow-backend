@@ -39,6 +39,13 @@ class StockMovementService
         )
             ->allowedFilters([
                 'type',
+                AllowedFilter::callback('waste_only', function (Builder $query, $value) {
+                    if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                        $query->whereIn('type', ['waste', 'expired']);
+                    }
+                }),
+                AllowedFilter::callback('start_date', fn (Builder $query, $value) => $query->whereDate('movement_date', '>=', $value)),
+                AllowedFilter::callback('end_date', fn (Builder $query, $value) => $query->whereDate('movement_date', '<=', $value)),
                 AllowedFilter::exact('material_id'),
                 AllowedFilter::exact('stock_batch_id'),
                 AllowedFilter::callback('global', function (Builder $query, $value) {

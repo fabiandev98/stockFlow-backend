@@ -45,6 +45,12 @@ class Material extends Model
         return $this->hasMany(ProductComposition::class);
     }
 
+    /** @return HasMany<RecipeIngredient, $this> */
+    public function recipeIngredients(): HasMany
+    {
+        return $this->hasMany(RecipeIngredient::class);
+    }
+
     /**
      * @return HasMany<PurchaseItem, $this>
      */

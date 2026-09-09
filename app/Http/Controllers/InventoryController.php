@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\DenebPermission;
 use App\Http\Resources\InventoryMaterialResource;
 use App\Http\Resources\InventoryProductResource;
+use App\Http\Resources\ProductBatchResource;
 use App\Http\Resources\StockBatchResource;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
@@ -46,7 +47,9 @@ class InventoryController extends Controller
         return new JsonResource([
             'low_stock_materials' => InventoryMaterialResource::collection($alerts['low_stock_materials']),
             'expired_batches' => StockBatchResource::collection($alerts['expired_batches']),
+            'expired_product_batches' => ProductBatchResource::collection($alerts['expired_product_batches']),
             'expiring_batches' => StockBatchResource::collection($alerts['expiring_batches']),
+            'expiring_product_batches' => ProductBatchResource::collection($alerts['expiring_product_batches']),
         ]);
     }
 }

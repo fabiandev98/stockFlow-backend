@@ -78,6 +78,13 @@ class MaterialService
             );
         }
 
+        if ($material->recipeIngredients()->exists()) {
+            throw new HttpException(
+                Response::HTTP_CONFLICT,
+                __('errors.materials.delete_used_in_compositions')
+            );
+        }
+
         if ($material->purchaseItems()->exists()) {
             throw new HttpException(
                 Response::HTTP_CONFLICT,
