@@ -137,7 +137,7 @@ class StockFlowDemoSeeder extends Seeder
 
         foreach ($roles as $roleData) {
             $role = Role::query()->firstOrCreate(
-                ['name' => $roleData['name'], 'guard_name' => 'web'],
+                ['name' => $roleData['name'], 'guard_name' => 'sanctum'],
                 [
                     'display_name' => $roleData['display_name'],
                     'description' => $roleData['description'],
@@ -154,7 +154,7 @@ class StockFlowDemoSeeder extends Seeder
                 collect($roleData['permissions'])
                     ->map(fn (DenebPermission $permission): Permission => Permission::query()->firstOrCreate([
                         'name' => $permission->value,
-                        'guard_name' => 'web',
+                        'guard_name' => 'sanctum',
                     ]))
                     ->all()
             );
@@ -269,6 +269,8 @@ class StockFlowDemoSeeder extends Seeder
                 'material_id' => $material->id,
                 'product_id' => null,
                 'quantity' => $quantity,
+                'accepted_quantity' => $quantity,
+                'rejected_quantity' => 0,
                 'unit_cost' => $unitCost,
                 'total_cost' => $itemTotal,
                 'expiration_date' => $expirationDate,
@@ -369,6 +371,8 @@ class StockFlowDemoSeeder extends Seeder
             'material_id' => null,
             'product_id' => $product->id,
             'quantity' => $quantity,
+            'accepted_quantity' => $quantity,
+            'rejected_quantity' => 0,
             'unit_cost' => $unitCost,
             'total_cost' => $itemTotal,
             'expiration_date' => Carbon::today()->addMonths(6)->toDateString(),
