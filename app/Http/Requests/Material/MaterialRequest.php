@@ -32,6 +32,7 @@ class MaterialRequest extends FormRequest
                 'max:120',
                 Rule::unique('materials', 'name')->ignore($this->materialFromRoute()),
             ],
+            'processing_type' => ['required', Rule::in(['raw', 'processed', 'ready_to_use'])],
             'unit' => 'required|string|max:50',
             'minimum_stock' => 'required|numeric|min:0',
             'is_perishable' => 'sometimes|boolean',

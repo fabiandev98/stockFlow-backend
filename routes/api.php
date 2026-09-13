@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MaterialCategoryController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\MaterialProcessingController;
 use App\Http\Controllers\ProductBatchController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
@@ -86,6 +87,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sales/{sale}/returns', [SaleController::class, 'storeReturn'])->name('sales.returns.store');
     Route::apiResource('/sales', SaleController::class)->only(['index', 'store', 'show']);
     Route::apiResource('/stock-batches', StockBatchController::class)->only(['index', 'show']);
+    Route::post('/material-processings', [MaterialProcessingController::class, 'store'])->name('material-processings.store');
     Route::apiResource('/stock-movements', StockMovementController::class)->only(['index', 'store', 'show']);
     Route::apiResource('/product-batches', ProductBatchController::class)->only(['index', 'show']);
     Route::get('/product-stock-movements/waste', [ProductStockMovementController::class, 'waste'])->name('product-stock-movements.waste');

@@ -17,6 +17,7 @@ class StockMovement extends Model
         'material_id',
         'stock_batch_id',
         'sale_item_id',
+        'material_processing_id',
         'user_id',
         'type',
         'quantity',
@@ -51,6 +52,12 @@ class StockMovement extends Model
     public function saleItem(): BelongsTo
     {
         return $this->belongsTo(SaleItem::class);
+    }
+
+    /** @return BelongsTo<MaterialProcessing, $this> */
+    public function materialProcessing(): BelongsTo
+    {
+        return $this->belongsTo(MaterialProcessing::class);
     }
 
     /**

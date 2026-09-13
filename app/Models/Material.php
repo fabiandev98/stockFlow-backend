@@ -17,6 +17,7 @@ class Material extends Model
     protected $fillable = [
         'material_category_id',
         'name',
+        'processing_type',
         'unit',
         'minimum_stock',
         'is_perishable',
@@ -73,5 +74,17 @@ class Material extends Model
     public function stockMovements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
+    }
+
+    /** @return HasMany<MaterialProcessing, $this> */
+    public function sourceProcessings(): HasMany
+    {
+        return $this->hasMany(MaterialProcessing::class, 'source_material_id');
+    }
+
+    /** @return HasMany<MaterialProcessing, $this> */
+    public function outputProcessings(): HasMany
+    {
+        return $this->hasMany(MaterialProcessing::class, 'output_material_id');
     }
 }

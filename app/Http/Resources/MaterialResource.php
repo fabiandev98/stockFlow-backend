@@ -21,6 +21,7 @@ class MaterialResource extends JsonResource
             'material_category_id' => $this->material_category_id,
             'category' => new MaterialCategoryResource($this->whenLoaded('category')),
             'name' => $this->name,
+            'processing_type' => $this->processing_type,
             'unit' => $this->unit,
             'minimum_stock' => $this->minimum_stock,
             'is_perishable' => $this->is_perishable,

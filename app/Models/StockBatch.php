@@ -17,6 +17,7 @@ class StockBatch extends Model
     protected $fillable = [
         'material_id',
         'purchase_item_id',
+        'material_processing_id',
         'initial_quantity',
         'available_quantity',
         'unit_cost',
@@ -47,6 +48,12 @@ class StockBatch extends Model
     public function purchaseItem(): BelongsTo
     {
         return $this->belongsTo(PurchaseItem::class);
+    }
+
+    /** @return BelongsTo<MaterialProcessing, $this> */
+    public function materialProcessing(): BelongsTo
+    {
+        return $this->belongsTo(MaterialProcessing::class);
     }
 
     /**

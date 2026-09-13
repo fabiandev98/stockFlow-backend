@@ -46,6 +46,7 @@ class MaterialService
         $material = Material::create([
             'material_category_id' => $data->material_category_id,
             'name' => $data->name,
+            'processing_type' => $data->processing_type,
             'unit' => $data->unit,
             'minimum_stock' => $data->minimum_stock,
             'is_perishable' => $data->is_perishable,
@@ -60,6 +61,7 @@ class MaterialService
         $material->update([
             'material_category_id' => $data->material_category_id,
             'name' => $data->name,
+            'processing_type' => $data->processing_type,
             'unit' => $data->unit,
             'minimum_stock' => $data->minimum_stock,
             'is_perishable' => $data->is_perishable,

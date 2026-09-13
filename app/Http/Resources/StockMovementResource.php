@@ -23,6 +23,7 @@ class StockMovementResource extends JsonResource
             'stock_batch_id' => $this->stock_batch_id,
             'stock_batch' => new StockBatchResource($this->whenLoaded('stockBatch')),
             'sale_item_id' => $this->sale_item_id,
+            'material_processing_id' => $this->material_processing_id,
             'user_id' => $this->user_id,
             'user' => new UserResource($this->whenLoaded('user')),
             'type' => $this->type,
