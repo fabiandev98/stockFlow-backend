@@ -39,20 +39,16 @@ class RecipeService
             foreach ($data['ingredients'] as $position => $ingredient) {
                 $material = Material::query()->findOrFail((int) $ingredient['material_id']);
                 $netQuantity = (float) $ingredient['net_quantity'];
-                $yield = (float) $ingredient['expected_yield_percentage'];
-                $consumption = round($netQuantity / ($yield / 100), 4);
 
                 $recipe->ingredients()->create([
                     'material_id' => $material->id,
                     'net_quantity' => $netQuantity,
-                    'expected_yield_percentage' => $yield,
-                    'consumption_quantity' => $consumption,
                     'unit' => $material->unit,
                     'position' => $position,
                 ]);
                 $product->compositions()->create([
                     'material_id' => $material->id,
-                    'quantity_required' => $consumption,
+                    'quantity_required' => $netQuantity,
                     'unit' => $material->unit,
                 ]);
             }

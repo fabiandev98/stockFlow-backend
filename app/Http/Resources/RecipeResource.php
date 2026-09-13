@@ -24,7 +24,7 @@ class RecipeResource extends JsonResource
                 ->selectRaw('COALESCE(SUM(available_quantity * unit_cost) / NULLIF(SUM(available_quantity), 0), 0) as average_cost')
                 ->value('average_cost');
 
-            return (float) $ingredient->consumption_quantity * (float) $available;
+            return (float) $ingredient->net_quantity * (float) $available;
         });
         $costPerUnit = $this->yield_quantity > 0 ? $cost / (float) $this->yield_quantity : 0;
         $salePrice = (float) ($this->product?->sale_price ?? 0);

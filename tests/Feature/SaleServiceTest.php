@@ -508,19 +508,19 @@ class SaleServiceTest extends TestCase
             'yield_quantity' => 1,
             'yield_unit' => 'u',
             'target_food_cost_percentage' => 35,
-            'ingredients' => [['material_id' => $material->id, 'net_quantity' => .18, 'expected_yield_percentage' => 90]],
+            'ingredients' => [['material_id' => $material->id, 'net_quantity' => .18]],
         ], $user);
         $second = $recipes->activate($product, [
             'yield_quantity' => 1,
             'yield_unit' => 'u',
-            'ingredients' => [['material_id' => $material->id, 'net_quantity' => .2, 'expected_yield_percentage' => 100]],
+            'ingredients' => [['material_id' => $material->id, 'net_quantity' => .2]],
         ], $user);
 
         $this->assertSame(1, $first->version);
         $this->assertSame('archived', $first->fresh()->status);
         $this->assertSame(2, $second->version);
         $this->assertSame('active', $second->status);
-        $this->assertSame('0.2000', $second->ingredients->firstOrFail()->consumption_quantity);
+        $this->assertSame('0.2000', $second->ingredients->firstOrFail()->net_quantity);
         $this->assertSame('0.20', $product->fresh()->compositions()->firstOrFail()->quantity_required);
     }
 

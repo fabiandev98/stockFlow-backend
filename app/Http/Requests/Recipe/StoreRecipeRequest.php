@@ -25,7 +25,6 @@ class StoreRecipeRequest extends FormRequest
             'ingredients' => ['required', 'array', 'min:1'],
             'ingredients.*.material_id' => ['required', 'integer', 'exists:materials,id', 'distinct'],
             'ingredients.*.net_quantity' => ['required', 'numeric', 'min:0.0001'],
-            'ingredients.*.expected_yield_percentage' => ['required', 'numeric', 'min:0.01', 'max:100'],
         ];
     }
 }
