@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Product extends Model
 {
@@ -19,19 +20,24 @@ class Product extends Model
         'name',
         'sale_price',
         'is_composed',
-        'is_internal_preparation',
-        'production_mode',
-        'shelf_life_days',
         'is_active',
     ];
 
     protected $casts = [
         'sale_price' => 'decimal:2',
         'is_composed' => 'boolean',
-        'is_internal_preparation' => 'boolean',
-        'shelf_life_days' => 'integer',
         'is_active' => 'boolean',
     ];
+
+    public function isPreparedOnSale(): bool
+    {
+        return $this->is_composed;
+    }
+
+    public function usesProductBatches(): bool
+    {
+        return ! $this->is_composed;
+    }
 
     /**
      * @return BelongsTo<ProductCategory, $this>
@@ -41,18 +47,16 @@ class Product extends Model
         return $this->belongsTo(ProductCategory::class, 'product_category_id');
     }
 
-    /**
-     * @return HasMany<ProductComposition, $this>
-     */
-    public function compositions(): HasMany
-    {
-        return $this->hasMany(ProductComposition::class);
-    }
-
     /** @return HasMany<Recipe, $this> */
     public function recipes(): HasMany
     {
         return $this->hasMany(Recipe::class);
+    }
+
+    /** @return HasOne<Recipe, $this> */
+    public function activeRecipe(): HasOne
+    {
+        return $this->hasOne(Recipe::class)->where('status', 'active');
     }
 
     /**
@@ -61,12 +65,6 @@ class Product extends Model
     public function productBatches(): HasMany
     {
         return $this->hasMany(ProductBatch::class);
-    }
-
-    /** @return HasMany<ProductProduction, $this> */
-    public function productions(): HasMany
-    {
-        return $this->hasMany(ProductProduction::class);
     }
 
     /**

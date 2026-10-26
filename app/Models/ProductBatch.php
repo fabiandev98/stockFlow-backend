@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ManagesBatchAvailability;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,12 +13,11 @@ class ProductBatch extends Model
     /**
      * @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory>
      */
-    use HasFactory;
+    use HasFactory, ManagesBatchAvailability;
 
     protected $fillable = [
         'product_id',
         'purchase_item_id',
-        'product_production_id',
         'initial_quantity',
         'available_quantity',
         'unit_cost',
@@ -48,12 +48,6 @@ class ProductBatch extends Model
     public function purchaseItem(): BelongsTo
     {
         return $this->belongsTo(PurchaseItem::class);
-    }
-
-    /** @return BelongsTo<ProductProduction, $this> */
-    public function production(): BelongsTo
-    {
-        return $this->belongsTo(ProductProduction::class, 'product_production_id');
     }
 
     /**

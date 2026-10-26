@@ -28,7 +28,7 @@ class ProductController extends Controller
 
     public function store(ProductRequest $request): ProductResource
     {
-        $product = $this->productService->create($request->toDto());
+        $product = $this->productService->create($request->toDto(), $request->user());
 
         return new ProductResource($product);
     }
@@ -37,12 +37,12 @@ class ProductController extends Controller
     {
         $this->authorize('view', $product);
 
-        return new ProductResource($product->load(['category', 'compositions.material.category', 'productBatches']));
+        return new ProductResource($product->load(['category', 'activeRecipe.ingredients.material.category', 'productBatches']));
     }
 
     public function update(ProductRequest $request, Product $product): ProductResource
     {
-        $updatedProduct = $this->productService->update($product, $request->toDto());
+        $updatedProduct = $this->productService->update($product, $request->toDto(), $request->user());
 
         return new ProductResource($updatedProduct);
     }

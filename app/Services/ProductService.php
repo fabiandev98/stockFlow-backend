@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Data\Product\ProductData;
-use App\Models\Material;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -14,6 +14,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class ProductService
 {
+    public function __construct(private readonly RecipeActivator $recipeActivator) {}
+
     /**
      * @return QueryBuilder<Product>
      */
@@ -21,15 +23,13 @@ class ProductService
     {
         return QueryBuilder::for(
             Product::query()
-                ->with('category')
-                ->withCount('compositions')
+                ->with(['category', 'activeRecipe.ingredients'])
                 ->withSum('productBatches as simple_available_stock', 'available_quantity')
                 ->orderBy('name')
         )
             ->allowedFilters([
                 AllowedFilter::exact('is_active'),
                 AllowedFilter::exact('is_composed'),
-                AllowedFilter::exact('is_internal_preparation'),
                 AllowedFilter::exact('product_category_id'),
                 AllowedFilter::callback('global', function (Builder $query, $value) {
                     $query
@@ -41,41 +41,35 @@ class ProductService
             ]);
     }
 
-    public function create(ProductData $data): Product
+    public function create(ProductData $data, ?User $user = null): Product
     {
-        return DB::transaction(function () use ($data) {
+        return DB::transaction(function () use ($data, $user) {
             $product = Product::create([
                 'product_category_id' => $data->product_category_id,
                 'name' => $data->name,
                 'sale_price' => $data->sale_price,
                 'is_composed' => $data->is_composed,
-                'is_internal_preparation' => $data->is_composed && $data->production_mode === 'batch' && $data->is_internal_preparation,
-                'production_mode' => $data->is_composed ? $data->production_mode : 'on_sale',
-                'shelf_life_days' => $data->is_composed && $data->production_mode === 'batch' ? $data->shelf_life_days : null,
                 'is_active' => $data->is_active,
             ]);
 
-            $this->rebuildCompositions($product, $data);
+            $this->syncCompositionRecipe($product, $data, $user, true);
 
             return $this->freshProduct($product);
         });
     }
 
-    public function update(Product $product, ProductData $data): Product
+    public function update(Product $product, ProductData $data, ?User $user = null): Product
     {
-        return DB::transaction(function () use ($product, $data) {
+        return DB::transaction(function () use ($product, $data, $user) {
             $product->update([
                 'product_category_id' => $data->product_category_id,
                 'name' => $data->name,
                 'sale_price' => $data->sale_price,
                 'is_composed' => $data->is_composed,
-                'is_internal_preparation' => $data->is_composed && $data->production_mode === 'batch' && $data->is_internal_preparation,
-                'production_mode' => $data->is_composed ? $data->production_mode : 'on_sale',
-                'shelf_life_days' => $data->is_composed && $data->production_mode === 'batch' ? $data->shelf_life_days : null,
                 'is_active' => $data->is_active,
             ]);
 
-            $this->rebuildCompositions($product, $data);
+            $this->syncCompositionRecipe($product, $data, $user);
 
             return $this->freshProduct($product);
         });
@@ -100,37 +94,45 @@ class ProductService
         $product->delete();
     }
 
-    private function rebuildCompositions(Product $product, ProductData $data): void
+    private function syncCompositionRecipe(Product $product, ProductData $data, ?User $user, bool $isCreating = false): void
     {
-        $product->compositions()->delete();
-
         if (! $data->is_composed) {
+            $this->recipeActivator->archiveActive($product);
+
             return;
         }
 
         if (count($data->compositions) === 0) {
-            throw new HttpException(
-                Response::HTTP_UNPROCESSABLE_ENTITY,
-                __('errors.products.composition_required')
-            );
+            if ($isCreating || ! $product->activeRecipe()->exists()) {
+                throw new HttpException(
+                    Response::HTTP_UNPROCESSABLE_ENTITY,
+                    __('errors.products.composition_required')
+                );
+            }
+
+            return;
         }
 
-        foreach ($data->compositions as $composition) {
-            $material = Material::query()->findOrFail((int) $composition['material_id']);
+        $ingredients = array_map(
+            fn (array $composition): array => [
+                'material_id' => (int) $composition['material_id'],
+                'net_quantity' => (float) $composition['quantity_required'],
+            ],
+            $data->compositions,
+        );
 
-            $product->compositions()->create([
-                'material_id' => $material->id,
-                'quantity_required' => (float) $composition['quantity_required'],
-                'unit' => $material->unit,
-            ]);
+        if (! $isCreating && $this->recipeActivator->matchesActiveRecipe($product, $ingredients)) {
+            return;
         }
+
+        $this->recipeActivator->activate($product, [], $ingredients, $user);
     }
 
     private function freshProduct(Product $product): Product
     {
         return $product->fresh([
             'category',
-            'compositions.material.category',
+            'activeRecipe.ingredients.material.category',
             'productBatches',
         ]) ?? $product;
     }

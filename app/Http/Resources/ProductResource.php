@@ -3,7 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Product;
-use App\Models\StockBatch;
+use App\Services\ProductAvailabilityCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,7 +17,7 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $availableToSell = $this->availableToSell();
+        $availableToSell = app(ProductAvailabilityCalculator::class)->calculate($this->resource);
 
         return [
             'id' => $this->id,
@@ -26,58 +26,26 @@ class ProductResource extends JsonResource
             'name' => $this->name,
             'sale_price' => $this->sale_price,
             'is_composed' => $this->is_composed,
-            'is_internal_preparation' => $this->is_internal_preparation,
-            'production_mode' => $this->production_mode,
-            'shelf_life_days' => $this->shelf_life_days,
             'is_active' => $this->is_active,
             'available_to_sell' => number_format($availableToSell, 2, '.', ''),
-            'compositions_count' => $this->whenCounted('compositions'),
-            'compositions' => ProductCompositionResource::collection($this->whenLoaded('compositions')),
+            'compositions_count' => $this->when(
+                $this->relationLoaded('activeRecipe'),
+                fn () => $this->activeRecipe?->ingredients->count() ?? 0,
+            ),
+            'compositions' => $this->when(
+                $this->relationLoaded('activeRecipe'),
+                fn () => $this->activeRecipe?->ingredients->map(fn ($ingredient) => [
+                    'id' => $ingredient->id,
+                    'product_id' => $this->id,
+                    'material_id' => $ingredient->material_id,
+                    'material' => $ingredient->relationLoaded('material') ? new MaterialResource($ingredient->material) : null,
+                    'quantity_required' => $ingredient->net_quantity,
+                    'unit' => $ingredient->unit,
+                ]) ?? [],
+            ),
             'product_batches' => ProductBatchResource::collection($this->whenLoaded('productBatches')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
-    }
-
-    private function availableToSell(): float
-    {
-        if (! $this->is_composed || $this->production_mode === 'batch') {
-            return (float) $this->productBatches()
-                ->where('status', 'available')
-                ->where(function ($query) {
-                    $query->whereNull('expiration_date')
-                        ->orWhereDate('expiration_date', '>=', today());
-                })
-                ->sum('available_quantity');
-        }
-
-        $compositions = $this->relationLoaded('compositions')
-            ? $this->compositions
-            : $this->compositions()->get();
-
-        if ($compositions->isEmpty()) {
-            return 0;
-        }
-
-        $limits = $compositions->map(function ($composition) {
-            $requiredQuantity = (float) $composition->quantity_required;
-
-            if ($requiredQuantity <= 0) {
-                return 0;
-            }
-
-            $availableQuantity = (float) StockBatch::query()
-                ->where('material_id', $composition->material_id)
-                ->where('status', 'available')
-                ->where(function ($query) {
-                    $query->whereNull('expiration_date')
-                        ->orWhereDate('expiration_date', '>=', today());
-                })
-                ->sum('available_quantity');
-
-            return floor($availableQuantity / $requiredQuantity);
-        });
-
-        return (float) max(0, $limits->min() ?? 0);
     }
 }

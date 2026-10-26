@@ -34,12 +34,9 @@ class ProductRequest extends FormRequest
             ],
             'sale_price' => 'required|numeric|min:0',
             'is_composed' => 'sometimes|boolean',
-            'is_internal_preparation' => 'sometimes|boolean',
-            'production_mode' => 'sometimes|in:on_sale,batch',
-            'shelf_life_days' => 'nullable|integer|min:0|max:3650',
             'is_active' => 'sometimes|boolean',
             'compositions' => 'nullable|array',
-            'compositions.*.material_id' => 'required|exists:materials,id',
+            'compositions.*.material_id' => 'required|distinct|exists:materials,id',
             'compositions.*.quantity_required' => 'required|numeric|min:0.01',
             'compositions.*.unit' => 'sometimes|string|max:50',
         ];
@@ -50,9 +47,6 @@ class ProductRequest extends FormRequest
         return ProductData::from([
             ...$this->validated(),
             'is_composed' => $this->boolean('is_composed', true),
-            'is_internal_preparation' => $this->boolean('is_internal_preparation'),
-            'production_mode' => $this->input('production_mode', 'on_sale'),
-            'shelf_life_days' => $this->input('shelf_life_days'),
             'is_active' => $this->boolean('is_active', true),
             'compositions' => $this->validated('compositions', []),
         ]);
