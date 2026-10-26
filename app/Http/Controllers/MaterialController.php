@@ -37,7 +37,7 @@ class MaterialController extends Controller
     {
         $this->authorize('view', $material);
 
-        return new MaterialResource($material->load('category'));
+        return new MaterialResource($material->load(['category', 'processingComponents.rawMaterial']));
     }
 
     public function update(MaterialRequest $request, Material $material): MaterialResource

@@ -14,5 +14,7 @@ class MaterialData extends Data
         public readonly float $minimum_stock,
         public readonly bool $is_perishable = false,
         public readonly ?int $default_expiration_days = null,
+        /** @var array<int, array{raw_material_id: int, quantity_per_unit: float}> */
+        public readonly array $processing_components = [],
     ) {}
 }

@@ -22,6 +22,7 @@ class MaterialService
             ->allowedFilters([
                 'unit',
                 'is_perishable',
+                AllowedFilter::exact('processing_type'),
                 AllowedFilter::exact('material_category_id'),
                 AllowedFilter::callback('global', function (Builder $query, $value) {
                     $query
@@ -53,7 +54,9 @@ class MaterialService
             'default_expiration_days' => $data->default_expiration_days,
         ]);
 
-        return $material->load('category');
+        $this->syncProcessingComponents($material, $data);
+
+        return $material->load(['category', 'processingComponents.rawMaterial']);
     }
 
     public function update(Material $material, MaterialData $data): Material
@@ -67,19 +70,13 @@ class MaterialService
             'is_perishable' => $data->is_perishable,
             'default_expiration_days' => $data->default_expiration_days,
         ]);
+        $this->syncProcessingComponents($material, $data);
 
-        return $material->fresh(['category']) ?? $material;
+        return $material->fresh(['category', 'processingComponents.rawMaterial']) ?? $material;
     }
 
     public function delete(Material $material): void
     {
-        if ($material->productCompositions()->exists()) {
-            throw new HttpException(
-                Response::HTTP_CONFLICT,
-                __('errors.materials.delete_used_in_compositions')
-            );
-        }
-
         if ($material->recipeIngredients()->exists()) {
             throw new HttpException(
                 Response::HTTP_CONFLICT,
@@ -109,5 +106,27 @@ class MaterialService
         }
 
         $material->delete();
+    }
+
+    private function syncProcessingComponents(Material $material, MaterialData $data): void
+    {
+        $material->processingComponents()->delete();
+        if ($data->processing_type !== 'processed') {
+            return;
+        }
+
+        foreach ($data->processing_components as $position => $component) {
+            $rawMaterial = Material::query()->findOrFail((int) $component['raw_material_id']);
+            if ($rawMaterial->processing_type !== 'raw' || $rawMaterial->id === $material->id) {
+                throw new HttpException(Response::HTTP_UNPROCESSABLE_ENTITY, 'Processed material components must be raw materials.');
+            }
+
+            $material->processingComponents()->create([
+                'raw_material_id' => $rawMaterial->id,
+                'quantity_per_unit' => $component['quantity_per_unit'],
+                'unit' => $rawMaterial->unit,
+                'position' => $position,
+            ]);
+        }
     }
 }

@@ -9,10 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MaterialProcessing extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
     use HasFactory;
 
     protected $fillable = [
         'source_material_id', 'output_material_id', 'output_stock_batch_id', 'user_id',
+        'operation_uuid',
         'input_quantity', 'output_quantity', 'waste_quantity', 'yield_percentage',
         'total_input_cost', 'output_unit_cost', 'processed_at', 'expiration_date', 'notes',
     ];

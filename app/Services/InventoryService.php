@@ -23,11 +23,13 @@ class InventoryService
                 ->with('category')
                 ->withSum(['stockBatches as available_stock' => fn (Builder $query) => $this->availableBatchConstraint($query)], 'available_quantity')
                 ->withMin(['stockBatches as next_expiration_date' => fn (Builder $query) => $this->availableBatchConstraint($query)], 'expiration_date')
+                ->withAvg('outputProcessings as average_processing_yield', 'yield_percentage')
                 ->orderBy('name')
         )
             ->allowedFilters([
                 'unit',
                 'is_perishable',
+                AllowedFilter::exact('processing_type'),
                 AllowedFilter::exact('material_category_id'),
                 AllowedFilter::callback('low_stock', function (Builder $query, $value) {
                     if (! filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
@@ -54,6 +56,7 @@ class InventoryService
                 'minimum_stock',
                 'available_stock',
                 'next_expiration_date',
+                'average_processing_yield',
             ]);
     }
 
@@ -152,12 +155,15 @@ class InventoryService
         ];
     }
 
+    /**
+     * @param  Builder<\App\Models\StockBatch|\App\Models\ProductBatch>  $query
+     */
     private function availableBatchConstraint(Builder $query): void
     {
         $query
             ->where('status', 'available')
             ->where('available_quantity', '>', 0)
-            ->where(function (Builder $query) {
+            ->where(function (Builder $query): void {
                 $query->whereNull('expiration_date')
                     ->orWhereDate('expiration_date', '>=', today());
             });

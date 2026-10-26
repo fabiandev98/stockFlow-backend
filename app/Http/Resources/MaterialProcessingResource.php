@@ -14,6 +14,7 @@ class MaterialProcessingResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'operation_uuid' => $this->operation_uuid,
             'source_material_id' => $this->source_material_id,
             'source_material' => new MaterialResource($this->whenLoaded('sourceMaterial')),
             'output_material_id' => $this->output_material_id,

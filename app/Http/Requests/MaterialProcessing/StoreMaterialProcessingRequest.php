@@ -19,12 +19,12 @@ class StoreMaterialProcessingRequest extends FormRequest
         return [
             'output_material_id' => ['required', 'integer', 'exists:materials,id'],
             'output_quantity' => ['required', 'numeric', 'min:0.0001'],
-            'inputs' => ['required', 'array', 'min:1'],
-            'inputs.*.stock_batch_id' => ['required', 'integer', 'distinct', 'exists:stock_batches,id'],
-            'inputs.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'processed_at' => ['required', 'date'],
             'expiration_date' => ['nullable', 'date', 'after_or_equal:processed_at'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'inputs' => ['nullable', 'array', 'min:1'],
+            'inputs.*.stock_batch_id' => ['required', 'integer', 'distinct', 'exists:stock_batches,id'],
+            'inputs.*.quantity' => ['required', 'numeric', 'min:0.0001'],
         ];
     }
 

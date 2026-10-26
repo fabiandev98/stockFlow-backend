@@ -38,14 +38,6 @@ class Material extends Model
         return $this->belongsTo(MaterialCategory::class, 'material_category_id');
     }
 
-    /**
-     * @return HasMany<ProductComposition, $this>
-     */
-    public function productCompositions(): HasMany
-    {
-        return $this->hasMany(ProductComposition::class);
-    }
-
     /** @return HasMany<RecipeIngredient, $this> */
     public function recipeIngredients(): HasMany
     {
@@ -86,5 +78,17 @@ class Material extends Model
     public function outputProcessings(): HasMany
     {
         return $this->hasMany(MaterialProcessing::class, 'output_material_id');
+    }
+
+    /** @return HasMany<ProcessedMaterialComponent, $this> */
+    public function processingComponents(): HasMany
+    {
+        return $this->hasMany(ProcessedMaterialComponent::class, 'processed_material_id')->orderBy('position');
+    }
+
+    /** @return HasMany<ProcessedMaterialComponent, $this> */
+    public function usedInProcessedMaterials(): HasMany
+    {
+        return $this->hasMany(ProcessedMaterialComponent::class, 'raw_material_id');
     }
 }

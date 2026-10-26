@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MaterialProcessingInput extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
     use HasFactory;
 
     protected $fillable = ['material_processing_id', 'stock_batch_id', 'quantity', 'unit_cost', 'total_cost'];

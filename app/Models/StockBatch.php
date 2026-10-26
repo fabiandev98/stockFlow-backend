@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ManagesBatchAvailability;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ class StockBatch extends Model
     /**
      * @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory>
      */
-    use HasFactory;
+    use HasFactory, ManagesBatchAvailability;
 
     protected $fillable = [
         'material_id',

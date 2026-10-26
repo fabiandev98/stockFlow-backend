@@ -25,12 +25,14 @@ class InventoryMaterialResource extends JsonResource
             'material_category_id' => $this->material_category_id,
             'category' => new MaterialCategoryResource($this->whenLoaded('category')),
             'name' => $this->name,
+            'processing_type' => $this->processing_type,
             'unit' => $this->unit,
             'minimum_stock' => $this->minimum_stock,
             'available_stock' => number_format($availableStock, 2, '.', ''),
             'is_low_stock' => $availableStock <= $minimumStock,
             'is_perishable' => $this->is_perishable,
             'next_expiration_date' => $nextExpirationDate,
+            'average_processing_yield' => $this->getAttribute('average_processing_yield'),
         ];
     }
 }
