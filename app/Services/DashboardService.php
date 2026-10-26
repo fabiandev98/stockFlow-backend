@@ -38,7 +38,7 @@ class DashboardService
                 'total' => number_format((float) (clone $salesQuery)->sum('total_amount') - $this->returnsTotal($start, $end), 2, '.', ''),
                 'count' => (clone $salesQuery)->count(),
                 'items_sold' => (float) SaleItem::query()
-                    ->whereHas('sale', fn ($query) => $query->completed()->whereBetween('sale_date', [$start, $end]))
+                    ->whereHas('sale', fn ($query) => $query->where('status', 'completed')->whereBetween('sale_date', [$start, $end]))
                     ->sum('quantity'),
             ],
             'profitability' => $this->profitability($start, $end),
