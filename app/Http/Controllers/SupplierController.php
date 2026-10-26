@@ -54,26 +54,24 @@ class SupplierController extends Controller
     {
         $this->authorize('view', $supplier);
 
-        return SupplierFeedbackNoteResource::collection($supplier->feedbackNotes()->with('user')->get());
+        return SupplierFeedbackNoteResource::collection($this->supplierService->feedbackNotes($supplier));
     }
 
     public function storeNote(StoreSupplierNoteRequest $request, Supplier $supplier): SupplierFeedbackNoteResource
     {
-        $note = $supplier->feedbackNotes()->create([
-            ...$request->validated(),
-            'user_id' => $request->user()?->id,
-        ]);
+        /** @var \App\Models\User|null $user */
+        $user = $request->user();
 
-        return new SupplierFeedbackNoteResource($note->load('user'));
+        return new SupplierFeedbackNoteResource(
+            $this->supplierService->createFeedbackNote($supplier, $request->noteData(), $user)
+        );
     }
 
     public function destroyNote(Supplier $supplier, SupplierFeedbackNote $supplierFeedbackNote): JsonResponse
     {
         $this->authorize('update', $supplier);
 
-        abort_unless($supplierFeedbackNote->supplier_id === $supplier->id, HttpStatus::HTTP_NOT_FOUND);
-
-        $supplierFeedbackNote->delete();
+        $this->supplierService->deleteFeedbackNote($supplier, $supplierFeedbackNote);
 
         return response()->json(null, HttpStatus::HTTP_NO_CONTENT);
     }

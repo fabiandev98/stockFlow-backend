@@ -23,4 +23,16 @@ class StoreSupplierNoteRequest extends FormRequest
             'note' => 'nullable|string|max:1000',
         ];
     }
+
+    /** @return array{rating: string, issue_type: string|null, note: string|null} */
+    public function noteData(): array
+    {
+        $data = $this->validated();
+
+        return [
+            'rating' => (string) $data['rating'],
+            'issue_type' => isset($data['issue_type']) ? (string) $data['issue_type'] : null,
+            'note' => isset($data['note']) ? (string) $data['note'] : null,
+        ];
+    }
 }

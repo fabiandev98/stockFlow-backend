@@ -4,7 +4,11 @@ namespace App\Services;
 
 use App\Data\Supplier\SupplierData;
 use App\Models\Supplier;
+use App\Models\SupplierFeedbackNote;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -64,6 +68,32 @@ class SupplierService
         $supplier->delete();
     }
 
+    /** @return Collection<int, SupplierFeedbackNote> */
+    public function feedbackNotes(Supplier $supplier): Collection
+    {
+        return $supplier->feedbackNotes()->with('user')->get();
+    }
+
+    /** @param array{rating: string, issue_type?: string|null, note?: string|null} $data */
+    public function createFeedbackNote(Supplier $supplier, array $data, ?User $user): SupplierFeedbackNote
+    {
+        return $supplier->feedbackNotes()->create([
+            'rating' => $data['rating'],
+            'issue_type' => $data['issue_type'] ?? null,
+            'note' => $data['note'] ?? null,
+            'user_id' => $user?->id,
+        ])->load('user');
+    }
+
+    public function deleteFeedbackNote(Supplier $supplier, SupplierFeedbackNote $note): void
+    {
+        if ($note->supplier_id !== $supplier->id) {
+            throw (new ModelNotFoundException)->setModel(SupplierFeedbackNote::class, [$note->id]);
+        }
+
+        $note->delete();
+    }
+
     /**
      * @return array<string, float|int>
      */
@@ -92,17 +122,6 @@ class SupplierService
         $feedbackCount = (int) ($feedback->rated_deliveries ?? 0);
         $goodRatings = (int) ($feedback->good_ratings ?? 0);
 
-        $yieldMetrics = DB::table('purchase_items')
-            ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
-            ->where('purchases.supplier_id', $supplier->id)
-            ->whereNotNull('purchase_items.usable_quantity')
-            ->where('purchase_items.accepted_quantity', '>', 0)
-            ->selectRaw('COUNT(*) as evaluated_items')
-            ->selectRaw('COALESCE(AVG((purchase_items.usable_quantity / purchase_items.accepted_quantity) * 100), 0) as average_yield_percentage')
-            ->selectRaw('COALESCE(SUM(purchase_items.accepted_quantity - purchase_items.usable_quantity), 0) as processing_waste_quantity')
-            ->selectRaw('COALESCE(SUM((purchase_items.accepted_quantity - purchase_items.usable_quantity) * purchase_items.unit_cost), 0) as processing_waste_value')
-            ->first();
-
         return [
             'delivered_quantity' => $delivered,
             'accepted_quantity' => $accepted,
@@ -110,17 +129,11 @@ class SupplierService
             'acceptance_percentage' => $delivered > 0 ? round(($accepted / $delivered) * 100, 2) : 0,
             'rejected_value' => round((float) ($metrics->rejected_value ?? 0), 2),
             'incidents' => (int) ($metrics->incidents ?? 0),
-            // A rated delivery represents a received item whose processing yield
-            // has been recorded, rather than a manual note about the supplier.
-            'rated_deliveries' => (int) ($yieldMetrics->evaluated_items ?? 0),
+            'rated_deliveries' => $feedbackCount,
             'good_ratings' => $goodRatings,
             'positive_feedback_percentage' => $feedbackCount > 0 ? round(($goodRatings / $feedbackCount) * 100, 2) : 0,
             'average_rating' => round((float) ($feedback->average_rating ?? 0), 2),
             'feedback_incidents' => (int) ($feedback->feedback_incidents ?? 0),
-            'evaluated_items' => (int) ($yieldMetrics->evaluated_items ?? 0),
-            'average_yield_percentage' => round((float) ($yieldMetrics->average_yield_percentage ?? 0), 2),
-            'processing_waste_quantity' => (float) ($yieldMetrics->processing_waste_quantity ?? 0),
-            'processing_waste_value' => round((float) ($yieldMetrics->processing_waste_value ?? 0), 2),
         ];
     }
 }

@@ -2,9 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\SupplierFeedbackNote;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin SupplierFeedbackNote */
 class SupplierFeedbackNoteResource extends JsonResource
 {
     /** @return array<string, mixed> */
