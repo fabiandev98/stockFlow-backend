@@ -85,10 +85,7 @@ class SaleReturnService
                 throw new HttpException(Response::HTTP_NOT_FOUND, 'The material batch for this return no longer exists');
             }
             if ($disposition === 'restock') {
-                $batch->update([
-                    'available_quantity' => round((float) $batch->available_quantity + $allocation, 2),
-                    'status' => $this->restoredBatchStatus($batch->expiration_date),
-                ]);
+                $batch->restore($allocation);
             }
             StockMovement::create(['material_id' => $movement->material_id, 'stock_batch_id' => $batch->id, 'sale_item_id' => $movement->sale_item_id, 'user_id' => $user->id, 'type' => $disposition === 'restock' ? 'sale_return' : 'waste', 'quantity' => $allocation, 'reason' => "Return #{$returnItem->sale_return_id}: {$reason}", 'movement_date' => $date]);
             $returnItem->allocations()->create(['stock_movement_id' => $movement->id, 'quantity' => $allocation]);
@@ -123,10 +120,7 @@ class SaleReturnService
                 throw new HttpException(Response::HTTP_NOT_FOUND, 'The product batch for this return no longer exists');
             }
             if ($disposition === 'restock') {
-                $batch->update([
-                    'available_quantity' => round((float) $batch->available_quantity + $allocation, 2),
-                    'status' => $this->restoredBatchStatus($batch->expiration_date),
-                ]);
+                $batch->restore($allocation);
             }
             ProductStockMovement::create(['product_id' => $movement->product_id, 'product_batch_id' => $batch->id, 'sale_item_id' => $movement->sale_item_id, 'user_id' => $user->id, 'type' => $disposition === 'restock' ? 'sale_return' : 'waste', 'quantity' => $allocation, 'reason' => "Return #{$returnItem->sale_return_id}: {$reason}", 'movement_date' => $date]);
             $returnItem->allocations()->create(['product_stock_movement_id' => $movement->id, 'quantity' => $allocation]);
@@ -135,10 +129,5 @@ class SaleReturnService
         if ($remaining > 0) {
             throw new HttpException(Response::HTTP_UNPROCESSABLE_ENTITY, 'Unable to trace all product lots for this return');
         }
-    }
-
-    private function restoredBatchStatus(?Carbon $expirationDate): string
-    {
-        return $expirationDate?->isBefore(today()) ? 'expired' : 'available';
     }
 }

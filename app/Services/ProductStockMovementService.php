@@ -6,8 +6,8 @@ use App\Data\ProductStockMovement\ProductStockMovementData;
 use App\Models\ProductBatch;
 use App\Models\ProductStockMovement;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -47,7 +47,10 @@ class ProductStockMovementService
     /** @return QueryBuilder<ProductStockMovement> */
     public function wasteQueryBuilder(): QueryBuilder
     {
-        return $this->indexQueryBuilder()->whereIn('type', ['waste', 'expired']);
+        $query = $this->indexQueryBuilder();
+        $query->whereIn('type', ['waste', 'expired']);
+
+        return $query;
     }
 
     public function create(ProductStockMovementData $data, User $user): ProductStockMovement

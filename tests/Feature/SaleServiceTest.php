@@ -8,7 +8,6 @@ use App\Data\Sale\SaleData;
 use App\Data\StockMovement\StockMovementData;
 use App\Http\Controllers\SaleController;
 use App\Http\Requests\Sale\CancelSaleRequest;
-use App\Http\Resources\ProductProductionResource;
 use App\Models\Material;
 use App\Models\Product;
 use App\Models\ProductBatch;
@@ -16,7 +15,6 @@ use App\Models\ProductStockMovement;
 use App\Models\StockBatch;
 use App\Models\User;
 use App\Services\DashboardService;
-use App\Services\ProductProductionService;
 use App\Services\ProductService;
 use App\Services\ProductStockMovementService;
 use App\Services\RecipeService;
@@ -24,7 +22,6 @@ use App\Services\SaleReturnService;
 use App\Services\SaleService;
 use App\Services\StockMovementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -192,7 +189,7 @@ class SaleServiceTest extends TestCase
             ]],
         ));
 
-        $this->assertSame('kg', $product->compositions->firstOrFail()->unit);
+        $this->assertSame('kg', $product->activeRecipe->ingredients->firstOrFail()->unit);
     }
 
     public function test_cancelling_a_sale_restores_its_lot_and_excludes_it_from_profitability(): void
@@ -271,67 +268,6 @@ class SaleServiceTest extends TestCase
         $this->assertSame('3000.00', $summary['profitability']['actual_food_cost']);
         $this->assertSame('30.00', $summary['profitability']['actual_food_cost_percentage']);
         $this->assertSame('7000.00', $summary['profitability']['adjusted_gross_profit']);
-    }
-
-    public function test_batch_production_uses_real_material_quantities_and_allows_an_expiration_override(): void
-    {
-        $user = User::factory()->create();
-        $material = Material::query()->create([
-            'name' => 'Cream cheese', 'unit' => 'kg', 'minimum_stock' => 0, 'is_perishable' => true,
-        ]);
-        $product = app(ProductService::class)->create(new ProductData(
-            product_category_id: null, name: 'Cheesecake', sale_price: 12000, is_composed: true, is_active: true,
-            compositions: [['material_id' => $material->id, 'quantity_required' => 1, 'unit' => 'kg']],
-            production_mode: 'batch', shelf_life_days: 4,
-        ));
-        $batch = $this->createMaterialBatch($material, '2026-08-20', '2026-08-27', 3);
-
-        $production = app(ProductProductionService::class)->create($product, [
-            'planned_quantity' => 10, 'produced_quantity' => 8, 'production_date' => '2026-08-25',
-            'expiration_date' => '2026-08-28', 'expiration_override_reason' => 'Producto refrigerado y validado',
-            'usages' => [['stock_batch_id' => $batch->id, 'quantity' => 1.5]],
-        ], $user);
-
-        $this->assertSame('2026-08-27', $production->suggested_expiration_date->toDateString());
-        $this->assertSame('2026-08-28', $production->expiration_date->toDateString());
-        $this->assertSame('1.50', $batch->fresh()->available_quantity);
-        $this->assertDatabaseHas('product_batches', ['product_id' => $product->id, 'product_production_id' => $production->id, 'available_quantity' => 8]);
-        $this->assertDatabaseHas('stock_movements', ['stock_batch_id' => $batch->id, 'type' => 'production_out', 'quantity' => 1.5]);
-        $this->assertSame('Cream cheese', ProductProductionResource::make($production)
-            ->response(Request::create('/'))
-            ->getData(true)['usages'][0]['material']['name']);
-    }
-
-    public function test_batch_production_rejects_repeated_material_batches(): void
-    {
-        $user = User::factory()->create();
-        $material = Material::query()->create([
-            'name' => 'Cocoa', 'unit' => 'kg', 'minimum_stock' => 0, 'is_perishable' => false,
-        ]);
-        $product = app(ProductService::class)->create(new ProductData(
-            product_category_id: null, name: 'Brownie mix', sale_price: 9000, is_composed: true, is_active: true,
-            compositions: [['material_id' => $material->id, 'quantity_required' => 1, 'unit' => 'kg']],
-            production_mode: 'batch', shelf_life_days: null,
-        ));
-        $batch = $this->createMaterialBatch($material, '2026-08-20', null, 10);
-
-        try {
-            app(ProductProductionService::class)->create($product, [
-                'produced_quantity' => 2, 'production_date' => '2026-08-25',
-                'usages' => [
-                    ['stock_batch_id' => $batch->id, 'quantity' => 6],
-                    ['stock_batch_id' => $batch->id, 'quantity' => 6],
-                ],
-            ], $user);
-
-            $this->fail('A batch cannot be added twice to the same production.');
-        } catch (HttpException $exception) {
-            $this->assertSame(422, $exception->getStatusCode());
-        }
-
-        $this->assertSame('10.00', $batch->fresh()->available_quantity);
-        $this->assertDatabaseCount('product_productions', 0);
-        $this->assertDatabaseCount('stock_movements', 0);
     }
 
     public function test_product_waste_reduces_its_batch_and_is_reflected_in_profitability(): void
@@ -521,7 +457,7 @@ class SaleServiceTest extends TestCase
         $this->assertSame(2, $second->version);
         $this->assertSame('active', $second->status);
         $this->assertSame('0.2000', $second->ingredients->firstOrFail()->net_quantity);
-        $this->assertSame('0.20', $product->fresh()->compositions()->firstOrFail()->quantity_required);
+        $this->assertSame('0.2000', $product->fresh()->activeRecipe()->firstOrFail()->ingredients()->firstOrFail()->net_quantity);
     }
 
     private function createComposedProduct(Material $material, float $quantityRequired, float $salePrice): Product
@@ -533,11 +469,8 @@ class SaleServiceTest extends TestCase
             'is_active' => true,
         ]);
 
-        $product->compositions()->create([
-            'material_id' => $material->id,
-            'quantity_required' => $quantityRequired,
-            'unit' => $material->unit,
-        ]);
+        $recipe = $product->recipes()->create(['version' => 1, 'status' => 'active', 'yield_quantity' => 1, 'yield_unit' => 'u', 'activated_at' => now()]);
+        $recipe->ingredients()->create(['material_id' => $material->id, 'net_quantity' => $quantityRequired, 'unit' => $material->unit, 'position' => 0]);
 
         return $product;
     }

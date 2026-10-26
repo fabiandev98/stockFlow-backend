@@ -12,16 +12,19 @@ class SaleReturnItem extends Model
 
     protected $casts = ['quantity' => 'decimal:2', 'unit_price' => 'decimal:2', 'total_amount' => 'decimal:2'];
 
+    /** @return BelongsTo<SaleReturn, $this> */
     public function saleReturn(): BelongsTo
     {
         return $this->belongsTo(SaleReturn::class);
     }
 
+    /** @return BelongsTo<SaleItem, $this> */
     public function saleItem(): BelongsTo
     {
         return $this->belongsTo(SaleItem::class);
     }
 
+    /** @return HasMany<SaleReturnAllocation, $this> */
     public function allocations(): HasMany
     {
         return $this->hasMany(SaleReturnAllocation::class);

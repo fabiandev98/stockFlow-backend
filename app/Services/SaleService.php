@@ -11,7 +11,6 @@ use App\Models\SaleItem;
 use App\Models\StockBatch;
 use App\Models\StockMovement;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -65,7 +64,7 @@ class SaleService
 
             foreach ($data->items as $item) {
                 $product = Product::query()
-                    ->with('compositions.material')
+                    ->with('activeRecipe.ingredients.material')
                     ->whereKey((int) $item['product_id'])
                     ->firstOrFail();
 
@@ -82,7 +81,7 @@ class SaleService
                     'total_price' => $totalPrice,
                 ]);
 
-                if ($product->is_composed && $product->production_mode === 'on_sale') {
+                if ($product->isPreparedOnSale()) {
                     $this->consumeProductMaterials($saleItem, $product, $quantity, $user, $data->sale_date);
                 } else {
                     $this->consumeSimpleProductBatches($saleItem, $product, $quantity, $user, $data->sale_date);
@@ -124,7 +123,7 @@ class SaleService
             );
         }
 
-        if ($product->is_composed && $product->production_mode === 'on_sale' && $product->compositions->isEmpty()) {
+        if ($product->isPreparedOnSale() && ($product->activeRecipe === null || $product->activeRecipe->ingredients->isEmpty())) {
             throw new HttpException(
                 Response::HTTP_UNPROCESSABLE_ENTITY,
                 "Product {$product->name} has no composition"
@@ -174,11 +173,7 @@ class SaleService
                 throw new HttpException(Response::HTTP_CONFLICT, 'The original material batch is unavailable');
             }
 
-            $availableQuantity = round((float) $batch->available_quantity + (float) $movement->quantity, 2);
-            $batch->update([
-                'available_quantity' => $availableQuantity,
-                'status' => $this->restoredBatchStatus($batch->expiration_date),
-            ]);
+            $batch->restore((float) $movement->quantity);
 
             StockMovement::create([
                 'material_id' => $movement->material_id,
@@ -202,11 +197,7 @@ class SaleService
                 throw new HttpException(Response::HTTP_CONFLICT, 'The original product batch is unavailable');
             }
 
-            $availableQuantity = round((float) $batch->available_quantity + (float) $movement->quantity, 2);
-            $batch->update([
-                'available_quantity' => $availableQuantity,
-                'status' => $this->restoredBatchStatus($batch->expiration_date),
-            ]);
+            $batch->restore((float) $movement->quantity);
 
             ProductStockMovement::create([
                 'product_id' => $movement->product_id,
@@ -221,13 +212,6 @@ class SaleService
         }
     }
 
-    private function restoredBatchStatus(?Carbon $expirationDate): string
-    {
-        return $expirationDate && $expirationDate->isBefore(today())
-            ? 'expired'
-            : 'available';
-    }
-
     private function consumeSimpleProductBatches(
         SaleItem $saleItem,
         Product $product,
@@ -239,16 +223,9 @@ class SaleService
 
         $batches = ProductBatch::query()
             ->where('product_id', $product->id)
-            ->where('status', 'available')
-            ->where('available_quantity', '>', 0)
-            ->where(function (Builder $query) use ($saleDate) {
-                $query->whereNull('expiration_date')
-                    ->orWhereDate('expiration_date', '>=', $saleDate);
-            })
-            ->orderByRaw('expiration_date is null')
-            ->orderBy('expiration_date')
-            ->orderBy('received_date')
-            ->orderBy('id')
+            ->available()
+            ->validOn($saleDate)
+            ->fefo()
             ->lockForUpdate()
             ->get();
 
@@ -268,12 +245,7 @@ class SaleService
 
             $batchAvailable = (float) $batch->available_quantity;
             $quantityToConsume = min($remainingQuantity, $batchAvailable);
-            $newAvailableQuantity = round($batchAvailable - $quantityToConsume, 2);
-
-            $batch->update([
-                'available_quantity' => $newAvailableQuantity,
-                'status' => $newAvailableQuantity > 0 ? 'available' : 'depleted',
-            ]);
+            $batch->consume($quantityToConsume);
 
             ProductStockMovement::create([
                 'product_id' => $product->id,
@@ -304,14 +276,19 @@ class SaleService
         User $user,
         string $saleDate,
     ): void {
-        foreach ($product->compositions->sortBy('material_id') as $composition) {
-            $requiredQuantity = (float) $composition->quantity_required * $soldQuantity;
+        $recipe = $product->activeRecipe;
+        if ($recipe === null) {
+            throw new HttpException(Response::HTTP_UNPROCESSABLE_ENTITY, "Product {$product->name} has no composition");
+        }
+
+        foreach ($recipe->ingredients->sortBy('material_id') as $ingredient) {
+            $requiredQuantity = (float) $ingredient->net_quantity * $soldQuantity;
 
             $this->consumeMaterialBatches(
                 $saleItem,
-                (int) $composition->material_id,
+                (int) $ingredient->material_id,
                 $requiredQuantity,
-                $composition->material->name ?? "material ID {$composition->material_id}",
+                $ingredient->material->name ?? "material ID {$ingredient->material_id}",
                 $user,
                 $saleDate,
             );
@@ -330,16 +307,9 @@ class SaleService
 
         $batches = StockBatch::query()
             ->where('material_id', $materialId)
-            ->where('status', 'available')
-            ->where('available_quantity', '>', 0)
-            ->where(function (Builder $query) use ($saleDate) {
-                $query->whereNull('expiration_date')
-                    ->orWhereDate('expiration_date', '>=', $saleDate);
-            })
-            ->orderByRaw('expiration_date is null')
-            ->orderBy('expiration_date')
-            ->orderBy('received_date')
-            ->orderBy('id')
+            ->available()
+            ->validOn($saleDate)
+            ->fefo()
             ->lockForUpdate()
             ->get();
 
@@ -359,12 +329,7 @@ class SaleService
 
             $batchAvailable = (float) $batch->available_quantity;
             $quantityToConsume = min($remainingQuantity, $batchAvailable);
-            $newAvailableQuantity = round($batchAvailable - $quantityToConsume, 2);
-
-            $batch->update([
-                'available_quantity' => $newAvailableQuantity,
-                'status' => $newAvailableQuantity > 0 ? 'available' : 'depleted',
-            ]);
+            $batch->consume($quantityToConsume);
 
             StockMovement::create([
                 'material_id' => $materialId,

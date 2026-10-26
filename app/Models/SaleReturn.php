@@ -12,16 +12,19 @@ class SaleReturn extends Model
 
     protected $casts = ['return_date' => 'date', 'subtotal_amount' => 'decimal:2', 'discount_amount' => 'decimal:2', 'tax_amount' => 'decimal:2', 'total_amount' => 'decimal:2'];
 
+    /** @return BelongsTo<Sale, $this> */
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return HasMany<SaleReturnItem, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(SaleReturnItem::class);

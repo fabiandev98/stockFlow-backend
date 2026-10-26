@@ -16,6 +16,11 @@ class ProductStockMovementResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $productBatch = $this->relationLoaded('productBatch') ? $this->productBatch : null;
+        $totalCost = $productBatch === null
+            ? null
+            : number_format((float) $this->quantity * (float) $productBatch->unit_cost, 2, '.', '');
+
         return [
             'id' => $this->id,
             'product_id' => $this->product_id,
@@ -27,10 +32,7 @@ class ProductStockMovementResource extends JsonResource
             'user' => new UserResource($this->whenLoaded('user')),
             'type' => $this->type,
             'quantity' => $this->quantity,
-            'total_cost' => $this->when(
-                $this->relationLoaded('productBatch'),
-                fn () => number_format((float) $this->quantity * (float) $this->productBatch->unit_cost, 2, '.', '')
-            ),
+            'total_cost' => $this->when($productBatch !== null, $totalCost),
             'reason' => $this->reason,
             'movement_date' => $this->movement_date,
             'created_at' => $this->created_at,

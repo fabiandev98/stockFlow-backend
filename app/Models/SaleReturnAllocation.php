@@ -11,16 +11,19 @@ class SaleReturnAllocation extends Model
 
     protected $casts = ['quantity' => 'decimal:2'];
 
+    /** @return BelongsTo<SaleReturnItem, $this> */
     public function saleReturnItem(): BelongsTo
     {
         return $this->belongsTo(SaleReturnItem::class);
     }
 
+    /** @return BelongsTo<StockMovement, $this> */
     public function stockMovement(): BelongsTo
     {
         return $this->belongsTo(StockMovement::class);
     }
 
+    /** @return BelongsTo<ProductStockMovement, $this> */
     public function productStockMovement(): BelongsTo
     {
         return $this->belongsTo(ProductStockMovement::class);
