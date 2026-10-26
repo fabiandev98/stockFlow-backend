@@ -48,27 +48,6 @@ class PurchaseService
             ]);
     }
 
-    /**
-     * @return Builder<Purchase>
-     */
-    public function pendingReviewQuery(): Builder
-    {
-        $pendingItems = fn ($query) => $query
-            ->where('accepted_quantity', '>', 0)
-            ->whereNull('usable_quantity');
-
-        return Purchase::query()
-            ->whereHas('items', $pendingItems)
-            ->with([
-                'supplier',
-                'items' => fn ($query) => $pendingItems($query)
-                    ->with(['material.category', 'product.category']),
-            ])
-            ->withCount('items')
-            ->withCount(['items as pending_review_items_count' => $pendingItems])
-            ->latest('purchase_date');
-    }
-
     public function create(PurchaseData $data, User $user): Purchase
     {
         return DB::transaction(function () use ($data, $user) {
@@ -251,7 +230,16 @@ class PurchaseService
 
     private function findMaterial(int $materialId): Material
     {
-        return Material::query()->findOrFail($materialId);
+        $material = Material::query()->findOrFail($materialId);
+
+        if (! in_array($material->processing_type, ['raw', 'ready_to_use'], true)) {
+            throw new HttpException(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                "Material '{$material->name}' is processed and cannot be purchased"
+            );
+        }
+
+        return $material;
     }
 
     private function findSimpleProduct(int $productId): Product
@@ -371,7 +359,6 @@ class PurchaseService
             'items.product.category',
             'items.stockBatches',
             'items.productBatches',
-            'items.yieldReviewer',
         ]) ?? $purchase;
     }
 }

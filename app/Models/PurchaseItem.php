@@ -21,10 +21,6 @@ class PurchaseItem extends Model
         'quantity',
         'accepted_quantity',
         'rejected_quantity',
-        'usable_quantity',
-        'processing_waste_reason',
-        'yield_recorded_at',
-        'yield_reviewer_id',
         'quality_issue_reason',
         'unit_cost',
         'total_cost',
@@ -35,8 +31,6 @@ class PurchaseItem extends Model
         'quantity' => 'decimal:2',
         'accepted_quantity' => 'decimal:2',
         'rejected_quantity' => 'decimal:2',
-        'usable_quantity' => 'decimal:2',
-        'yield_recorded_at' => 'datetime',
         'unit_cost' => 'decimal:4',
         'total_cost' => 'decimal:2',
         'expiration_date' => 'date',
@@ -64,14 +58,6 @@ class PurchaseItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
-    }
-
-    /**
-     * @return BelongsTo<User, $this>
-     */
-    public function yieldReviewer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'yield_reviewer_id');
     }
 
     /**
