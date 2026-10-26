@@ -81,6 +81,7 @@ class RestaurantDemoSeeder extends Seeder
         foreach ($items as $key => [$name, $unit, $category, $minimum, $perishable, $expiration]) {
             $materials[$key] = Material::query()->updateOrCreate(['name' => $name], [
                 'material_category_id' => $categories[$category]->id,
+                'processing_type' => 'raw',
                 'unit' => $unit,
                 'minimum_stock' => $minimum,
                 'is_perishable' => $perishable,
@@ -132,9 +133,10 @@ class RestaurantDemoSeeder extends Seeder
     /** @param array<int, array{0: Material, 1: float}> $ingredients */
     private function recipe(Product $product, array $ingredients): void
     {
-        $product->compositions()->delete();
-        foreach ($ingredients as [$material, $quantity]) {
-            $product->compositions()->create(['material_id' => $material->id, 'quantity_required' => $quantity, 'unit' => $material->unit]);
+        $product->recipes()->where('status', 'active')->update(['status' => 'archived']);
+        $recipe = $product->recipes()->create(['version' => (int) ($product->recipes()->max('version') ?? 0) + 1, 'status' => 'active', 'yield_quantity' => 1, 'yield_unit' => 'u', 'activated_at' => now()]);
+        foreach ($ingredients as $position => [$material, $quantity]) {
+            $recipe->ingredients()->create(['material_id' => $material->id, 'net_quantity' => $quantity, 'unit' => $material->unit, 'position' => $position]);
         }
     }
 
@@ -187,17 +189,17 @@ class RestaurantDemoSeeder extends Seeder
             $product = $products[$key];
             $item = $sale->items()->create(['product_id' => $product->id, 'quantity' => $quantity, 'unit_price' => $product->sale_price, 'total_price' => $product->sale_price * $quantity]);
             if ($product->is_composed) {
-                foreach ($product->compositions as $composition) {
+                foreach ($product->activeRecipe()->firstOrFail()->ingredients as $ingredient) {
                     $batch = collect($stock)->first(
-                        fn (StockBatch $stockBatch): bool => $stockBatch->material_id === $composition->material_id,
+                        fn (StockBatch $stockBatch): bool => $stockBatch->material_id === $ingredient->material_id,
                     );
 
                     if (! $batch) {
                         continue;
                     }
-                    $used = (float) $composition->quantity_required * $quantity;
+                    $used = (float) $ingredient->net_quantity * $quantity;
                     $batch->decrement('available_quantity', $used);
-                    StockMovement::query()->create(['material_id' => $composition->material_id, 'stock_batch_id' => $batch->id, 'sale_item_id' => $item->id, 'user_id' => $user->id, 'type' => 'sale', 'quantity' => $used, 'reason' => "Demo sale #{$sale->id}", 'movement_date' => $date]);
+                    StockMovement::query()->create(['material_id' => $ingredient->material_id, 'stock_batch_id' => $batch->id, 'sale_item_id' => $item->id, 'user_id' => $user->id, 'type' => 'sale', 'quantity' => $used, 'reason' => "Demo sale #{$sale->id}", 'movement_date' => $date]);
                 }
             } else {
                 $batch = $productBatches[$key];

@@ -173,11 +173,12 @@ class StockFlowDemoSeeder extends Seeder
             'Dry goods' => MaterialCategory::query()->firstOrCreate(['name' => 'Dry goods']),
         ];
 
-        return [
+        $materials = [
             'beef' => Material::query()->updateOrCreate(
                 ['name' => 'Beef'],
                 [
                     'material_category_id' => $categories['Proteins']->id,
+                    'processing_type' => 'raw',
                     'unit' => 'kg',
                     'minimum_stock' => 5,
                     'is_perishable' => true,
@@ -188,6 +189,7 @@ class StockFlowDemoSeeder extends Seeder
                 ['name' => 'Burger bun'],
                 [
                     'material_category_id' => $categories['Dry goods']->id,
+                    'processing_type' => 'raw',
                     'unit' => 'u',
                     'minimum_stock' => 20,
                     'is_perishable' => true,
@@ -198,6 +200,7 @@ class StockFlowDemoSeeder extends Seeder
                 ['name' => 'Lettuce'],
                 [
                     'material_category_id' => $categories['Vegetables']->id,
+                    'processing_type' => 'raw',
                     'unit' => 'kg',
                     'minimum_stock' => 2,
                     'is_perishable' => true,
@@ -208,6 +211,7 @@ class StockFlowDemoSeeder extends Seeder
                 ['name' => 'Takeaway box'],
                 [
                     'material_category_id' => $categories['Packaging']->id,
+                    'processing_type' => 'ready_to_use',
                     'unit' => 'u',
                     'minimum_stock' => 30,
                     'is_perishable' => false,
@@ -215,6 +219,27 @@ class StockFlowDemoSeeder extends Seeder
                 ],
             ),
         ];
+
+        $burgerPatty = Material::query()->updateOrCreate(
+            ['name' => 'Burger patty'],
+            [
+                'material_category_id' => $categories['Proteins']->id,
+                'processing_type' => 'processed',
+                'unit' => 'u',
+                'minimum_stock' => 10,
+                'is_perishable' => true,
+                'default_expiration_days' => 3,
+            ],
+        );
+
+        $burgerPatty->processingComponents()->updateOrCreate(
+            ['raw_material_id' => $materials['beef']->id],
+            ['quantity_per_unit' => 0.18, 'unit' => 'kg', 'position' => 0],
+        );
+
+        $materials['burger_patty'] = $burgerPatty;
+
+        return $materials;
     }
 
     private function seedSuppliers(): Supplier
@@ -312,12 +337,8 @@ class StockFlowDemoSeeder extends Seeder
             ],
         );
 
-        $burger->compositions()->delete();
-        $burger->compositions()->createMany([
-            ['material_id' => $materials['beef']->id, 'quantity_required' => 0.18, 'unit' => 'kg'],
-            ['material_id' => $materials['bun']->id, 'quantity_required' => 1, 'unit' => 'u'],
-            ['material_id' => $materials['lettuce']->id, 'quantity_required' => 0.05, 'unit' => 'kg'],
-            ['material_id' => $materials['box']->id, 'quantity_required' => 1, 'unit' => 'u'],
+        $this->seedRecipe($burger, [
+            [$materials['beef'], 0.18], [$materials['bun'], 1], [$materials['lettuce'], 0.05], [$materials['box'], 1],
         ]);
 
         $water = Product::query()->updateOrCreate(
@@ -329,13 +350,22 @@ class StockFlowDemoSeeder extends Seeder
                 'is_active' => true,
             ],
         );
-        $water->compositions()->delete();
         $this->seedSimpleProductBatch($water);
 
         return [
             'burger' => $burger,
             'water' => $water,
         ];
+    }
+
+    /** @param array<int, array{0: Material, 1: float}> $ingredients */
+    private function seedRecipe(Product $product, array $ingredients): void
+    {
+        $product->recipes()->where('status', 'active')->update(['status' => 'archived']);
+        $recipe = $product->recipes()->create(['version' => (int) ($product->recipes()->max('version') ?? 0) + 1, 'status' => 'active', 'yield_quantity' => 1, 'yield_unit' => 'u', 'activated_at' => now()]);
+        foreach ($ingredients as $position => [$material, $quantity]) {
+            $recipe->ingredients()->create(['material_id' => $material->id, 'net_quantity' => $quantity, 'unit' => $material->unit, 'position' => $position]);
+        }
     }
 
     private function seedSimpleProductBatch(Product $product): void
@@ -427,11 +457,11 @@ class StockFlowDemoSeeder extends Seeder
             'total_price' => round($quantity * $unitPrice, 2),
         ]);
 
-        foreach ($burger->compositions as $composition) {
-            $requiredQuantity = round((float) $composition->quantity_required * $quantity, 2);
+        foreach ($burger->activeRecipe()->firstOrFail()->ingredients as $ingredient) {
+            $requiredQuantity = round((float) $ingredient->net_quantity * $quantity, 2);
 
             $batch = StockBatch::query()
-                ->where('material_id', $composition->material_id)
+                ->where('material_id', $ingredient->material_id)
                 ->where('status', 'available')
                 ->where('available_quantity', '>=', $requiredQuantity)
                 ->orderByRaw('expiration_date is null')
@@ -450,7 +480,7 @@ class StockFlowDemoSeeder extends Seeder
             ]);
 
             $saleItem->stockMovements()->create([
-                'material_id' => $composition->material_id,
+                'material_id' => $ingredient->material_id,
                 'stock_batch_id' => $batch->id,
                 'user_id' => $user->id,
                 'type' => 'sale',

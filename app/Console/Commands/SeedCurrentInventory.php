@@ -27,10 +27,12 @@ class SeedCurrentInventory extends Command
         }
 
         $materials = Material::query()
-            ->whereDoesntHave('stockBatches', function ($query) {
-                $query->where('status', 'available')
+            ->whereIn('processing_type', ['raw', 'ready_to_use'])
+            ->whereDoesntHave('stockBatches', function ($query): void {
+                $query
+                    ->where('status', 'available')
                     ->where('available_quantity', '>', 0)
-                    ->where(function ($query) {
+                    ->where(function ($query): void {
                         $query->whereNull('expiration_date')
                             ->orWhereDate('expiration_date', '>=', today());
                     });
@@ -56,8 +58,10 @@ class SeedCurrentInventory extends Command
 
             foreach ($materials as $material) {
                 $referenceBatch = $material->stockBatches()->latest('received_date')->first();
-                $quantity = (float) ($referenceBatch?->initial_quantity ?? max(1, (float) $material->minimum_stock * 2));
-                $unitCost = (float) ($referenceBatch?->unit_cost ?? 0);
+                $quantity = $referenceBatch instanceof StockBatch
+                    ? (float) $referenceBatch->initial_quantity
+                    : max(1, (float) $material->minimum_stock * 2);
+                $unitCost = $referenceBatch instanceof StockBatch ? (float) $referenceBatch->unit_cost : 0;
                 $expirationDate = $material->is_perishable
                     ? today()->addDays($material->default_expiration_days ?? 14)
                     : null;
